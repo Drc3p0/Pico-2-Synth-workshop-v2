@@ -7,14 +7,14 @@
 
   // ---------- colour palette ----------
   var COLORS = {
-    button:   "#E74C3C",  // bright red
-    analog:   "#2ECC71",  // emerald green
-    i2c:      "#3498DB",  // dodger blue
-    audio:    "#F39C12",  // orange
-    led:      "#9B59B6",  // purple
+    button:   "#4ADE80",  // green for assigned inputs
+    analog:   "#4ADE80",  // green for assigned inputs
+    i2c:      "#4ADE80",  // green for assigned inputs
+    audio:    "#4ADE80",  // green for assigned inputs
+    led:      "#4ADE80",  // green for assigned inputs
     power:    "#E91E63",  // pink
     gnd:      "#7F8C8D",  // gray
-    inactive: "#BDC3C7",  // light gray
+    inactive: "#3D4460",  // dark gray for dark mode
     board:    "#2D6A4F",  // PCB green
     boardEdge:"#1B4332",  // darker green edge
     chip:     "#1a1a1a",
@@ -111,9 +111,9 @@
       return anyActive ? { color: COLORS.gnd, label: "GND" } : null;
     }
 
-    // Power rails
+    // Power rails — VBUS removed, all power from 3V3
     if (gpioName === "VBUS") {
-      return anyActive ? { color: COLORS.power, label: "VBUS (5V)" } : null;
+      return null;
     }
     if (gpioName === "3V3") {
       return anyActive ? { color: COLORS.power, label: "3V3 Out" } : null;
