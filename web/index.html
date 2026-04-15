@@ -278,21 +278,56 @@
 
     <!-- ===== 7. Continuous Inputs ===== -->
     <section class="step-card" id="inputs-section">
-      <h2>Continuous Inputs</h2>
-      <div class="slider-group">
-        <label>Pot A (GP26) <input type="range" id="pot-a" min="0" max="1023" value="512"><output id="pot-a-val">512</output></label>
-        <label>Pot B (GP27) <input type="range" id="pot-b" min="0" max="1023" value="512"><output id="pot-b-val">512</output></label>
-        <label>Pot C (GP28) <input type="range" id="pot-c" min="0" max="1023" value="0"><output id="pot-c-val">0</output></label>
-      </div>
-      <div class="slider-group" id="accel-sliders">
-        <label>Accel X <input type="range" id="accel-x" min="-1000" max="1000" value="0"><output id="accel-x-val">0</output></label>
-        <label>Accel Y <input type="range" id="accel-y" min="-1000" max="1000" value="0"><output id="accel-y-val">0</output></label>
+      <h2>Live Inputs</h2>
+      <div class="live-inputs-grid">
+        <div class="live-inputs-column">
+          <h3 class="live-inputs-heading">Potentiometers</h3>
+          <div id="pot-list">
+            <div class="live-input-row" data-pot="0">
+              <label>Pot A</label>
+              <div class="assign-field">
+                <select class="assign-gpio" id="pot-0-gpio">
+                  <option value="GP26" selected>GP26</option>
+                  <option value="GP27">GP27</option>
+                  <option value="GP28">GP28</option>
+                </select>
+              </div>
+              <input type="range" id="pot-a" min="0" max="1023" value="512">
+              <output id="pot-a-val">512</output>
+            </div>
+          </div>
+          <button class="btn btn-sm" id="add-pot-btn">+ Add Pot</button>
+        </div>
+
+        <div class="live-inputs-column">
+          <h3 class="live-inputs-heading">I2C Devices</h3>
+          <div class="live-input-row hw-device" id="mpr121-row">
+            <label><input type="checkbox" id="mpr121-enabled"> MPR121 Touch</label>
+            <span class="hw-status" id="mpr121-status">Not connected</span>
+          </div>
+          <div class="live-input-row hw-device" id="accel-row">
+            <label><input type="checkbox" id="accel-enabled"> Accelerometer</label>
+            <span class="hw-status" id="accel-status">Not connected</span>
+          </div>
+          <div class="slider-group" id="accel-sliders">
+            <label>Accel X <input type="range" id="accel-x" min="-1000" max="1000" value="0"><output id="accel-x-val">0</output></label>
+            <label>Accel Y <input type="range" id="accel-y" min="-1000" max="1000" value="0"><output id="accel-y-val">0</output></label>
+          </div>
+        </div>
       </div>
     </section>
 
     <!-- ===== 8. Pinout Diagram ===== -->
     <details class="expandable">
       <summary>Pinout Diagram</summary>
+      <div class="pinout-board-select">
+        <label for="pinout-board-image">Board Photo Overlay</label>
+        <select id="pinout-board-image">
+          <option value="none">None (SVG only)</option>
+          <option value="pico2">Pico 2 Photo</option>
+          <option value="pico">Pico Photo</option>
+        </select>
+      </div>
       <div id="pinout-container"></div>
     </details>
 
@@ -459,12 +494,19 @@
     <details class="expandable">
       <summary>Generated Code</summary>
       <div class="code-output">
+        <div class="code-requirements" id="code-requirements">
+          <h3>Required Files for Your Pico</h3>
+          <div class="requirements-list" id="requirements-list">
+            <p>Select a voice and configure parameters to see requirements.</p>
+          </div>
+        </div>
         <div class="code-header">
           <span class="filename">code.py</span>
           <div class="code-actions">
             <button class="btn btn-copy" id="btn-copy-code">Copy to Clipboard</button>
             <button class="btn btn-download" id="btn-download-code">Download code.py</button>
             <button class="btn btn-download" id="btn-download-json">Download JSON</button>
+            <button class="btn btn-download" id="btn-download-bundle">Download All (ZIP)</button>
           </div>
         </div>
         <div class="code-body">
@@ -481,6 +523,7 @@
   </footer>
 
   <!-- ===== 12. Scripts ===== -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="synth-engine.js"></script>
   <script src="voices/eighties-dystopia.js"></script>
   <script src="voices/tiny-lfo-song.js"></script>
