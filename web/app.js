@@ -165,28 +165,30 @@
   // Application state
   // =========================================================================
 
-  var state = {
-    selectedVoice: "eighties_dystopia",
-    boardType: "pico2",
-    useWav: false,
-    latchMode: false,
-    currentOctave: 3,
-    currentScale: "pentatonic_major",
-    tonalityMajor: true,
-    inputMap: {},
-    paramValues: {},
-    hardwareOptions: {
-      mpr121_enabled: false,
-      accelerometer_enabled: false
-    },
-    // Arpeggiator
-    arpEnabled: false,
-    arpPattern: "up",
-    arpSpeed: 120,
-    loopEnabled: false,
-    // Assignable GPIO map: { fieldId: { type: "button"|"pot"|"touch"|"none", gpio: "GP0" } }
-    assignMap: {}
-  };
+   var state = {
+     selectedVoice: "eighties_dystopia",
+     boardType: "pico2",
+     useWav: false,
+     latchMode: false,
+     currentOctave: 3,
+     currentScale: "pentatonic_major",
+     tonalityMajor: true,
+     inputMap: {},
+     paramValues: {},
+     hardwareOptions: {
+       mpr121_enabled: false,
+       accelerometer_enabled: false
+     },
+     // Arpeggiator
+     arpEnabled: false,
+     arpPattern: "up",
+     arpSpeed: 120,
+     loopEnabled: false,
+     // Assignable GPIO map: { fieldId: { type: "button"|"pot"|"touch"|"none", gpio: "GP0" } }
+     assignMap: {},
+     // Pot tracking: [{ id: "a", gpio: "GP26", el: domElement, slider: domElement, output: domElement }, ...]
+     pots: []
+   };
 
   var browserVoice = null;
   var audioInitDone = false;
@@ -207,43 +209,42 @@
 
   var $ = function (id) { return document.getElementById(id); };
 
-  var $voiceSelect     = $("voice-select");
-  var $wavToggle       = $("wav-toggle");
-  var $latchToggle     = $("latch-toggle");
-  var $waveformCanvas  = $("waveform-canvas");
-  var $keyboard        = $("keyboard");
-  var $octaveDown      = $("octave-down");
-  var $octaveUp        = $("octave-up");
-  var $octaveDisplay   = $("octave-display");
-  var $paramPanel      = $("param-panel");
-  var $paramSection    = $("param-section");
-  var $potA            = $("pot-a");
-  var $potB            = $("pot-b");
-  var $potC            = $("pot-c");
-  var $potAVal         = $("pot-a-val");
-  var $potBVal         = $("pot-b-val");
-  var $potCVal         = $("pot-c-val");
-  var $accelX          = $("accel-x");
-  var $accelY          = $("accel-y");
-  var $accelXVal       = $("accel-x-val");
-  var $accelYVal       = $("accel-y-val");
-  var $accelSliders    = $("accel-sliders");
-  var $pinoutContainer = $("pinout-container");
-  var $codeOutput      = $("code-output");
-  var $btnCopyCode     = $("btn-copy-code");
-  var $btnDownloadCode = $("btn-download-code");
-  var $btnDownloadJson = $("btn-download-json");
-  var $btnConnectPico  = $("btn-connect-pico");
-  var $onboarding      = $("onboarding");
-  var $boardSelect     = $("board-select");
-  var $boardHint       = $("board-hint");
-  var $scaleSelect     = $("scale-select");
-  var $btnTonality     = $("btn-tonality");
-  var $arpToggle       = $("arp-toggle");
-  var $arpPattern      = $("arp-pattern");
-  var $arpSpeed        = $("arp-speed");
-  var $arpSpeedVal     = $("arp-speed-val");
-  var $loopToggle      = $("loop-toggle");
+   var $voiceSelect     = $("voice-select");
+    var $wavToggle       = $("wav-toggle");
+    var $latchToggle     = $("latch-toggle");
+    var $waveformCanvas  = $("waveform-canvas");
+    var $keyboard        = $("keyboard");
+    var $octaveDown      = $("octave-down");
+    var $octaveUp        = $("octave-up");
+    var $octaveDisplay   = $("octave-display");
+    var $paramPanel      = $("param-panel");
+    var $paramSection    = $("param-section");
+    var $potA            = $("pot-a");
+    var $accelX          = $("accel-x");
+    var $accelY          = $("accel-y");
+    var $accelXVal       = $("accel-x-val");
+    var $accelYVal       = $("accel-y-val");
+    var $accelSliders    = $("accel-sliders");
+    var $potList         = $("pot-list");
+    var $addPotBtn       = $("add-pot-btn");
+    var $pinoutContainer = $("pinout-container");
+    var $codeOutput      = $("code-output");
+    var $btnCopyCode     = $("btn-copy-code");
+    var $btnDownloadCode = $("btn-download-code");
+    var $btnDownloadJson = $("btn-download-json");
+    var $btnDownloadBundle = $("btn-download-bundle");
+    var $btnConnectPico  = $("btn-connect-pico");
+    var $onboarding      = $("onboarding");
+    var $boardSelect     = $("board-select");
+    var $boardHint       = $("board-hint");
+    var $scaleSelect     = $("scale-select");
+    var $btnTonality     = $("btn-tonality");
+    var $arpToggle       = $("arp-toggle");
+    var $arpPattern      = $("arp-pattern");
+    var $arpSpeed        = $("arp-speed");
+    var $arpSpeedVal     = $("arp-speed-val");
+    var $loopToggle      = $("loop-toggle");
+    var $requirementsList = $("requirements-list");
 
   // =========================================================================
   // Utility helpers
@@ -1098,22 +1099,21 @@
   // WAV file toggle
   // =========================================================================
 
-  function initWavToggle() {
+   function initWavToggle() {
     if (!$wavToggle) return;
     $wavToggle.addEventListener("change", function () {
       state.useWav = $wavToggle.checked;
-      // Show/hide WAV copy instructions in onboarding
       if ($onboarding) {
         var wavNote = $onboarding.querySelector(".note");
         if (wavNote) {
           wavNote.style.display = state.useWav ? "block" : "none";
         }
       }
-      // If voice supports switching wavetable source, do it
       if (browserVoice && typeof browserVoice.setParam === "function") {
         browserVoice.setParam("use_wav", state.useWav ? 1 : 0);
       }
       scheduleCodeUpdate();
+      updateRequirementsList();
     });
   }
 
@@ -1122,42 +1122,62 @@
   // =========================================================================
 
   function initHardwareCheckboxes() {
-    // These checkboxes may now live in a different section or not exist yet.
-    // Use safe lookups so we don't crash if they are absent.
-    var $mpr121Enabled = document.getElementById("mpr121-enabled");
-    var $accelEnabled  = document.getElementById("accel-enabled");
+     var $mpr121Enabled = document.getElementById("mpr121-enabled");
+     var $accelEnabled  = document.getElementById("accel-enabled");
+     var $mpr121Row     = document.getElementById("mpr121-row");
+     var $mpr121Status  = document.getElementById("mpr121-status");
+     var $accelRow      = document.getElementById("accel-row");
+     var $accelStatus   = document.getElementById("accel-status");
 
-    if ($mpr121Enabled) {
-      $mpr121Enabled.addEventListener("change", function () {
-        state.hardwareOptions.mpr121_enabled = $mpr121Enabled.checked;
-        updateInputSourceDropdowns();
-        updatePinout();
-        scheduleCodeUpdate();
-      });
-    }
-
-    if ($accelEnabled) {
-      $accelEnabled.addEventListener("change", function () {
-        state.hardwareOptions.accelerometer_enabled = $accelEnabled.checked;
-        // Dim/show accel sliders
-        if ($accelSliders) {
-          if (state.hardwareOptions.accelerometer_enabled) {
-            $accelSliders.classList.remove("hw-disabled");
-          } else {
-            $accelSliders.classList.add("hw-disabled");
+       if ($mpr121Enabled) {
+        $mpr121Enabled.addEventListener("change", function () {
+          state.hardwareOptions.mpr121_enabled = $mpr121Enabled.checked;
+          if ($mpr121Row) {
+            if ($mpr121Enabled.checked) {
+              $mpr121Row.classList.add("connected");
+              if ($mpr121Status) $mpr121Status.textContent = "Connected";
+            } else {
+              $mpr121Row.classList.remove("connected");
+              if ($mpr121Status) $mpr121Status.textContent = "Not connected";
+            }
           }
-        }
-        updateInputSourceDropdowns();
-        updatePinout();
-        scheduleCodeUpdate();
-      });
-    }
+          updateInputSourceDropdowns();
+          updatePinout();
+          scheduleCodeUpdate();
+          updateRequirementsList();
+        });
+      }
 
-    // Set initial accel state
-    if ($accelSliders && !state.hardwareOptions.accelerometer_enabled) {
-      $accelSliders.classList.add("hw-disabled");
-    }
-  }
+      if ($accelEnabled) {
+        $accelEnabled.addEventListener("change", function () {
+          state.hardwareOptions.accelerometer_enabled = $accelEnabled.checked;
+          if ($accelRow) {
+            if ($accelEnabled.checked) {
+              $accelRow.classList.add("connected");
+              if ($accelStatus) $accelStatus.textContent = "Connected";
+            } else {
+              $accelRow.classList.remove("connected");
+              if ($accelStatus) $accelStatus.textContent = "Not connected";
+            }
+          }
+          if ($accelSliders) {
+            if (state.hardwareOptions.accelerometer_enabled) {
+              $accelSliders.classList.remove("hw-disabled");
+            } else {
+              $accelSliders.classList.add("hw-disabled");
+            }
+          }
+          updateInputSourceDropdowns();
+          updatePinout();
+          scheduleCodeUpdate();
+          updateRequirementsList();
+        });
+      }
+
+     if ($accelSliders && !state.hardwareOptions.accelerometer_enabled) {
+       $accelSliders.classList.add("hw-disabled");
+     }
+   }
 
   /** Update disabled state on all input source dropdowns based on hardware checkboxes */
   function updateInputSourceDropdowns() {
@@ -1254,13 +1274,13 @@
       scheduleCodeUpdate();
     });
 
-    // Input source dropdown
-    var sourceSelect = createInputSourceDropdown(pName);
+    // Input assignment fields (type + GPIO)
+    var assignFields = createInputAssignFields(pName, "continuous");
 
     row.appendChild(labelDiv);
     row.appendChild(slider);
     row.appendChild(valueDisplay);
-    row.appendChild(sourceSelect);
+    row.appendChild(assignFields);
   }
 
   function renderTriggerParam(row, pName, p) {
@@ -1286,77 +1306,244 @@
     // Spacer for grid alignment
     var spacer = document.createElement("span");
 
-    // Input source dropdown
-    var sourceSelect = createInputSourceDropdown(pName);
+    // Input assignment fields (type + GPIO) - triggers only allow Button/MPR121
+    var assignFields = createInputAssignFields(pName, "trigger");
 
     row.appendChild(labelDiv);
     row.appendChild(btn);
     row.appendChild(spacer);
-    row.appendChild(sourceSelect);
+    row.appendChild(assignFields);
   }
 
-  function createInputSourceDropdown(pName) {
-    var select = document.createElement("select");
-    select.className = "input-source";
-    select.id = "input-source-" + pName;
+  function createInputAssignFields(pName, paramType) {
+    var wrapper = document.createElement("div");
+    wrapper.className = "input-assign-wrapper";
+    wrapper.id = "assign-wrapper-" + pName;
 
-    for (var i = 0; i < INPUT_SOURCES.length; i++) {
-      var src = INPUT_SOURCES[i];
-      var opt = document.createElement("option");
-      opt.value = src.value;
-      opt.textContent = src.label;
-      if (state.inputMap[pName] === src.value) {
-        opt.selected = true;
-      }
-      // Disable based on hardware checkboxes
-      if (src.requiresMpr121 && !state.hardwareOptions.mpr121_enabled) {
-        opt.disabled = true;
-      }
-      if (src.requiresAccel && !state.hardwareOptions.accelerometer_enabled) {
-        opt.disabled = true;
-      }
-      select.appendChild(opt);
+    // Type dropdown (input type: POT, LDR, Button, MPR121, Accel, Not assigned)
+    var typeSelect = document.createElement("select");
+    typeSelect.className = "input-assign-type";
+    typeSelect.id = "assign-type-" + pName;
+
+    var typeOptions = [];
+    typeOptions.push({ value: "", label: "Not assigned" });
+    typeOptions.push({ value: "POT", label: "POT" });
+    typeOptions.push({ value: "LDR", label: "LDR" });
+    if (paramType === "continuous") {
+      typeOptions.push({ value: "Button", label: "Button" });
+    }
+    typeOptions.push({ value: "MPR121", label: "MPR121" });
+    if (paramType === "continuous") {
+      typeOptions.push({ value: "Accel", label: "Accel" });
     }
 
-    select.addEventListener("change", function () {
-      var val = select.value;
-      if (val) {
-        state.inputMap[pName] = val;
-      } else {
-        delete state.inputMap[pName];
+    for (var i = 0; i < typeOptions.length; i++) {
+      var opt = document.createElement("option");
+      opt.value = typeOptions[i].value;
+      opt.textContent = typeOptions[i].label;
+      typeSelect.appendChild(opt);
+    }
+
+    // GPIO pin dropdown (content changes based on type)
+    var gpioSelect = document.createElement("select");
+    gpioSelect.className = "input-assign-gpio";
+    gpioSelect.id = "assign-gpio-" + pName;
+    gpioSelect.style.display = "none";
+
+    // Set initial values from state if available
+    var currentAssignment = state.inputMap[pName];
+    if (currentAssignment && typeof currentAssignment === "object") {
+      typeSelect.value = currentAssignment.type || "";
+      populateGpioForType(gpioSelect, currentAssignment.type);
+      if (currentAssignment.gpio) {
+        gpioSelect.value = currentAssignment.gpio;
       }
-      updatePinout();
+      if (currentAssignment.type) {
+        gpioSelect.style.display = "";
+      }
+    }
+
+    // Type change handler
+    typeSelect.addEventListener("change", function () {
+      var selectedType = typeSelect.value;
+      populateGpioForType(gpioSelect, selectedType);
+      updateInputAssignment(pName, selectedType, gpioSelect.value);
       scheduleCodeUpdate();
+      updatePinout();
     });
 
-    return select;
+    // GPIO change handler
+    gpioSelect.addEventListener("change", function () {
+      updateInputAssignment(pName, typeSelect.value, gpioSelect.value);
+      scheduleCodeUpdate();
+      updatePinout();
+    });
+
+    wrapper.appendChild(typeSelect);
+    wrapper.appendChild(gpioSelect);
+    return wrapper;
+  }
+
+  function populateGpioForType(gpioSelect, inputType) {
+    if (!gpioSelect) return;
+    gpioSelect.innerHTML = "";
+
+    var pins = [];
+    if (inputType === "POT" || inputType === "LDR") {
+      pins = ["GP26", "GP27", "GP28"];
+    } else if (inputType === "Button") {
+      pins = ["GP0", "GP1", "GP2", "GP3", "GP4", "GP5", "GP6", "GP7"];
+    } else if (inputType === "MPR121") {
+      for (var i = 0; i < 12; i++) {
+        pins.push("Touch " + i);
+      }
+    } else if (inputType === "Accel") {
+      pins = ["X", "Y"];
+    }
+
+    if (pins.length === 0) {
+      gpioSelect.style.display = "none";
+      return;
+    }
+
+    gpioSelect.style.display = "";
+    for (var j = 0; j < pins.length; j++) {
+      var opt = document.createElement("option");
+      opt.value = pins[j];
+      opt.textContent = pins[j];
+      gpioSelect.appendChild(opt);
+    }
+    if (pins.length > 0) {
+      gpioSelect.value = pins[0];
+    }
+  }
+
+  function updateInputAssignment(pName, inputType, gpio) {
+    if (!inputType || inputType === "") {
+      delete state.inputMap[pName];
+    } else {
+      state.inputMap[pName] = { type: inputType, gpio: gpio };
+    }
   }
 
   // =========================================================================
   // Continuous inputs (Pots / Accel)
   // =========================================================================
 
-  function initContinuousInputs() {
-    // Pots
-    var pots = [
-      { slider: $potA, output: $potAVal, source: "pot_a" },
-      { slider: $potB, output: $potBVal, source: "pot_b" },
-      { slider: $potC, output: $potCVal, source: "pot_c" }
-    ];
+  function wirePotSlider(potEl, potIdx, gpio) {
+    if (!potEl) return;
+    var $output = potEl.parentElement.querySelector("output");
+    potEl.addEventListener("input", function () {
+      var raw = parseInt(potEl.value, 10);
+      if ($output) $output.textContent = raw;
+      var normalized = raw / 1023;
+      var potId = String.fromCharCode(97 + potIdx);
+      var potLetter = potId;
+      applyNormalizedInput("pot_" + potLetter, normalized);
+    });
+  }
 
-    for (var i = 0; i < pots.length; i++) {
-      (function (pot) {
-        if (!pot.slider) return;
-        pot.slider.addEventListener("input", function () {
-          var raw = parseInt(pot.slider.value, 10);
-          if (pot.output) pot.output.textContent = raw;
-          var normalized = raw / 1023;
-          applyNormalizedInput(pot.source, normalized);
-        });
-      })(pots[i]);
+  function createPotRow(potIdx, gpio) {
+    var potId = String.fromCharCode(97 + potIdx);
+    var rowDiv = document.createElement("div");
+    rowDiv.className = "live-input-row";
+    rowDiv.setAttribute("data-pot", String(potIdx));
+
+    var label = document.createElement("label");
+    label.textContent = "Pot " + potId.toUpperCase();
+
+    var assignField = document.createElement("div");
+    assignField.className = "assign-field";
+    var gpioSelect = document.createElement("select");
+    gpioSelect.className = "assign-gpio";
+    gpioSelect.id = "pot-" + potIdx + "-gpio";
+    var opts = [
+      { value: "GP26", label: "GP26" },
+      { value: "GP27", label: "GP27" },
+      { value: "GP28", label: "GP28" }
+    ];
+    for (var oi = 0; oi < opts.length; oi++) {
+      var opt = document.createElement("option");
+      opt.value = opts[oi].value;
+      opt.textContent = opts[oi].label;
+      if (opts[oi].value === gpio) opt.selected = true;
+      gpioSelect.appendChild(opt);
+    }
+    assignField.appendChild(gpioSelect);
+
+    var slider = document.createElement("input");
+    slider.type = "range";
+    slider.min = "0";
+    slider.max = "1023";
+    slider.value = "512";
+    slider.id = "pot-" + potId;
+
+    var output = document.createElement("output");
+    output.id = "pot-" + potId + "-val";
+    output.textContent = "512";
+
+    var removeBtn = document.createElement("button");
+    removeBtn.type = "button";
+    removeBtn.className = "btn btn-sm btn-remove";
+    removeBtn.textContent = "Remove";
+    removeBtn.style.marginLeft = "8px";
+
+    removeBtn.addEventListener("click", function () {
+      state.pots = state.pots.filter(function (p) { return p.id !== potId; });
+      rowDiv.parentElement.removeChild(rowDiv);
+      if ($addPotBtn) $addPotBtn.disabled = false;
+      updatePinout();
+      scheduleCodeUpdate();
+    });
+
+    rowDiv.appendChild(label);
+    rowDiv.appendChild(assignField);
+    rowDiv.appendChild(slider);
+    rowDiv.appendChild(output);
+    rowDiv.appendChild(removeBtn);
+
+    wirePotSlider(slider, potIdx, gpio);
+
+    gpioSelect.addEventListener("change", function () {
+      updatePinout();
+      scheduleCodeUpdate();
+    });
+
+    return { el: rowDiv, slider: slider, output: output, id: potId, gpio: gpio, gpioSelect: gpioSelect };
+  }
+
+  function initContinuousInputs() {
+    if (!$potA) return;
+
+    state.pots = [];
+
+    var firstPotEl = $potA;
+    var firstOutput = document.getElementById("pot-a-val");
+    wirePotSlider(firstPotEl, 0, "GP26");
+    state.pots.push({ id: "a", gpio: "GP26", el: $potA.parentElement, slider: $potA, output: firstOutput, gpioSelect: document.getElementById("pot-0-gpio") });
+
+    if ($addPotBtn) {
+      $addPotBtn.addEventListener("click", function () {
+        var nextIdx = state.pots.length;
+        if (nextIdx >= 3) return;
+
+        var nextGpio = ["GP26", "GP27", "GP28"][nextIdx];
+        var potRow = createPotRow(nextIdx, nextGpio);
+        state.pots.push(potRow);
+
+        if ($potList) {
+          $potList.appendChild(potRow.el);
+        }
+
+        if (state.pots.length >= 3) {
+          $addPotBtn.disabled = true;
+        }
+
+        updatePinout();
+        scheduleCodeUpdate();
+      });
     }
 
-    // Accel
     var accels = [
       { slider: $accelX, output: $accelXVal, source: "accel_x" },
       { slider: $accelY, output: $accelYVal, source: "accel_y" }
@@ -1381,7 +1568,30 @@
 
     for (var param in state.inputMap) {
       if (!state.inputMap.hasOwnProperty(param)) continue;
-      if (state.inputMap[param] !== source) continue;
+      var assignment = state.inputMap[param];
+      if (!assignment || typeof assignment !== "object") continue;
+
+      var inputType = assignment.type;
+      var gpio = assignment.gpio;
+      var matches = false;
+
+      if (inputType === "POT" && source.indexOf("pot_") === 0) {
+        var potIndex = source.charAt(4);
+        if ((potIndex === "a" && gpio === "GP26") || (potIndex === "b" && gpio === "GP27") || (potIndex === "c" && gpio === "GP28")) {
+          matches = true;
+        }
+      } else if (inputType === "LDR" && source.indexOf("ldr_") === 0) {
+        var ldrIndex = source.charAt(4);
+        if ((ldrIndex === "a" && gpio === "GP26") || (ldrIndex === "b" && gpio === "GP27") || (ldrIndex === "c" && gpio === "GP28")) {
+          matches = true;
+        }
+      } else if (inputType === "Accel" && (source === "accel_x" || source === "accel_y")) {
+        if ((source === "accel_x" && gpio === "X") || (source === "accel_y" && gpio === "Y")) {
+          matches = true;
+        }
+      }
+
+      if (!matches) continue;
 
       var def = VOICES[state.selectedVoice];
       if (!def || !def.params[param]) continue;
@@ -1392,7 +1602,6 @@
         val = clamp(val, p.min, p.max);
         state.paramValues[param] = val;
 
-        // Update slider and value display in param panel
         var slider = document.getElementById("param-slider-" + param);
         var valueDisp = document.getElementById("param-value-" + param);
         if (slider) slider.value = val;
@@ -1512,25 +1721,20 @@
 
     for (var param in map) {
       if (!map.hasOwnProperty(param)) continue;
-      var src = map[param];
+      var assignment = map[param];
+      if (!assignment || typeof assignment !== "object") continue;
 
-      if (src.indexOf("button_") === 0) {
-        var btnNum = parseInt(src.split("_")[1], 10);
-        if (buttons.indexOf(btnNum) === -1) buttons.push(btnNum);
+      var inputType = assignment.type;
+      var gpio = assignment.gpio;
+
+      if (inputType === "Button" && gpio) {
+        var btnNum = parseInt(gpio.replace("GP", ""), 10);
+        if (!isNaN(btnNum) && buttons.indexOf(btnNum) === -1) buttons.push(btnNum);
       }
-      if (src === "pot_a" || src === "ldr_a") {
-        if (analog.indexOf("GP26") === -1) analog.push("GP26");
+      if ((inputType === "POT" || inputType === "LDR") && gpio) {
+        if (analog.indexOf(gpio) === -1) analog.push(gpio);
       }
-      if (src === "pot_b" || src === "ldr_b") {
-        if (analog.indexOf("GP27") === -1) analog.push("GP27");
-      }
-      if (src === "pot_c" || src === "ldr_c") {
-        if (analog.indexOf("GP28") === -1) analog.push("GP28");
-      }
-      if (src === "accel_x" || src === "accel_y") {
-        i2c = true;
-      }
-      if (src.indexOf("mpr121_") === 0) {
+      if (inputType === "MPR121" || inputType === "Accel") {
         i2c = true;
       }
     }
@@ -1576,10 +1780,11 @@
 
   var codeUpdateTimer = null;
 
-  function scheduleCodeUpdate() {
+   function scheduleCodeUpdate() {
     if (codeUpdateTimer) clearTimeout(codeUpdateTimer);
     codeUpdateTimer = setTimeout(function () {
       updateCodeOutput();
+      updateRequirementsList();
     }, 150);
   }
 
@@ -1633,8 +1838,8 @@
     for (var m = 0; m < mapKeys.length; m++) {
       var mKey = mapKeys[m];
       var mVal = state.inputMap[mKey];
-      if (!mVal) continue;
-      lines.push('        "' + mKey + '": "' + mVal + '",');
+      if (!mVal || typeof mVal !== "object") continue;
+      lines.push('        "' + mKey + '": {"type": "' + mVal.type + '", "gpio": "' + (mVal.gpio || "") + '"},');
     }
 
     lines.push("    },");
@@ -1887,7 +2092,7 @@
     return result;
   }
 
-  // =========================================================================
+   // =========================================================================
   // Code output rendering
   // =========================================================================
 
@@ -1895,6 +2100,50 @@
     if (!$codeOutput) return;
     var code = generatePythonCode();
     $codeOutput.innerHTML = highlightPython(code);
+  }
+
+  // =========================================================================
+  // Requirements list generation
+  // =========================================================================
+
+  function updateRequirementsList() {
+    if (!$requirementsList) return;
+
+    var html = "";
+
+    // Firmware
+    var boardName = state.boardType === "pico2" ? "Pico 2 (RP2350)" : "Pico (RP2040)";
+    var uf2Name = state.boardType === "pico2" ? "pico2-latest.uf2" : "pico-latest.uf2";
+    html += "<div><strong>1. Firmware:</strong> <code>" + uf2Name + "</code> (" + boardName + ")</div>";
+
+    // Code files
+    html += "<div><strong>2. Code files:</strong>";
+    html += "<ul><li><code>code.py</code> (main program)</li>";
+    html += "<li><code>synth-config.json</code> (configuration backup)</li></ul></div>";
+
+    // Libraries
+    var libs = ["adafruit_bus_device", "adafruit_midi"];
+    if (state.hardwareOptions.mpr121_enabled) {
+      libs.push("adafruit_mpr121");
+    }
+    if (state.hardwareOptions.accelerometer_enabled) {
+      libs.push("adafruit_lis3dh");
+    }
+
+    html += "<div><strong>3. Libraries (from ";
+    html += "<a href='https://github.com/adafruit/Adafruit_CircuitPython_Bundle/releases' target='_blank'>Adafruit library bundle</a>";
+    html += "):</strong><ul>";
+    for (var i = 0; i < libs.length; i++) {
+      html += "<li><code>" + libs[i] + ".mpy</code></li>";
+    }
+    html += "</ul></div>";
+
+    // WAV files
+    if (state.useWav) {
+      html += "<div><strong>4. Media:</strong> <code>wav/</code> folder (wavetable samples)</div>";
+    }
+
+    $requirementsList.innerHTML = html;
   }
 
   // =========================================================================
@@ -1930,7 +2179,7 @@
     };
 
     for (var k in state.inputMap) {
-      if (state.inputMap.hasOwnProperty(k) && state.inputMap[k]) {
+      if (state.inputMap.hasOwnProperty(k) && state.inputMap[k] && typeof state.inputMap[k] === "object") {
         config.input_map[k] = state.inputMap[k];
       }
     }
@@ -1955,11 +2204,84 @@
     return config;
   }
 
-  // =========================================================================
+   // =========================================================================
   // Copy / Download buttons
   // =========================================================================
 
-  function initActionButtons() {
+  function generateInstructionsText() {
+    var boardName = state.boardType === "pico2" ? "Pico 2 (RP2350)" : "Pico (RP2040)";
+    var uf2Name = state.boardType === "pico2" ? "pico2-latest.uf2" : "pico-latest.uf2";
+
+    var libs = ["adafruit_bus_device", "adafruit_midi"];
+    if (state.hardwareOptions.mpr121_enabled) {
+      libs.push("adafruit_mpr121");
+    }
+    if (state.hardwareOptions.accelerometer_enabled) {
+      libs.push("adafruit_lis3dh");
+    }
+
+    var lines = [];
+    lines.push("==============================================================================");
+    lines.push("PICO 2 SYNTH WORKSHOP v2 -- Setup Instructions");
+    lines.push("==============================================================================");
+    lines.push("");
+    lines.push("STEP 1: Install Firmware");
+    lines.push("-----------------------");
+    lines.push("1. Download CircuitPython for your board:");
+    lines.push("   - Board: " + boardName);
+    lines.push("   - Filename: " + uf2Name);
+    lines.push("   - Download from: https://circuitpython.org/downloads");
+    lines.push("");
+    lines.push("2. Put your Pico in bootloader mode:");
+    lines.push("   - Hold BOOTSEL button while plugging in USB");
+    lines.push("   - A mass storage device should appear");
+    lines.push("");
+    lines.push("3. Drag the .uf2 file onto the mass storage device");
+    lines.push("4. The Pico will reboot with CircuitPython installed");
+    lines.push("");
+    lines.push("STEP 2: Copy Code Files");
+    lines.push("----------------------");
+    lines.push("1. The Pico will now appear as 'CIRCUITPY' drive");
+    lines.push("2. Copy the following files to the CIRCUITPY drive:");
+    lines.push("   - code.py (main program)");
+    lines.push("   - synth-config.json (configuration)");
+    lines.push("");
+    lines.push("STEP 3: Install Libraries");
+    lines.push("------------------------");
+    lines.push("1. Download the Adafruit CircuitPython library bundle:");
+    lines.push("   https://github.com/adafruit/Adafruit_CircuitPython_Bundle/releases");
+    lines.push("");
+    lines.push("2. Extract the bundle and copy these .mpy files to");
+    lines.push("   CIRCUITPY/lib/:");
+    for (var i = 0; i < libs.length; i++) {
+      lines.push("   - " + libs[i] + ".mpy");
+    }
+    lines.push("");
+
+    if (state.useWav) {
+      lines.push("STEP 4: Copy Wavetable Samples");
+      lines.push("------------------------------");
+      lines.push("1. Create a 'wav' folder on the CIRCUITPY drive");
+      lines.push("2. Copy your .wav wavetable files into this folder");
+      lines.push("3. Update synth-config.json if using non-standard filenames");
+      lines.push("");
+    }
+
+    lines.push("STEP 5: Verify Installation");
+    lines.push("---------------------------");
+    lines.push("1. Open a terminal/serial monitor at 115200 baud");
+    lines.push("2. You should see startup messages like:");
+    lines.push("   Pico 2 Synth Workshop v2");
+    lines.push("   Voice: [your selected voice]");
+    lines.push("");
+    lines.push("That's it! Your synth is ready to use.");
+    lines.push("");
+    lines.push("==============================================================================");
+
+    return lines.join("\n");
+  }
+
+   function initActionButtons() {
     if ($btnCopyCode) {
       $btnCopyCode.addEventListener("click", function () {
         var code = generatePythonCode();
@@ -1987,6 +2309,41 @@
         var json = JSON.stringify(generateJsonConfig(), null, 2);
         downloadFile("synth-config.json", json, "application/json");
       });
+    }
+
+    if ($btnDownloadBundle) {
+      $btnDownloadBundle.addEventListener("click", function () {
+        downloadBundle();
+      });
+    }
+  }
+
+  function downloadBundle() {
+    var code = generatePythonCode();
+    var json = JSON.stringify(generateJsonConfig(), null, 2);
+    var instructions = generateInstructionsText();
+
+    if (typeof JSZip !== "undefined") {
+      var zip = new JSZip();
+      zip.file("code.py", code);
+      zip.file("synth-config.json", json);
+      zip.file("INSTRUCTIONS.txt", instructions);
+
+      zip.generateAsync({ type: "blob" }).then(function (blob) {
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement("a");
+        a.href = url;
+        a.download = "pico-synth-bundle.zip";
+        a.style.display = "none";
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(function () {
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }, 100);
+      });
+    } else {
+      downloadFile("INSTRUCTIONS.txt", instructions, "text/plain");
     }
   }
 
@@ -2060,73 +2417,71 @@
   }
 
   function handleSerialData(data) {
-    // Expected: {"btn":[0,1,0,0],"pot":[512,1023,0],"accel":[0.1,-0.3],"touch":[1,0,0,1,...]}
+     // Expected: {"btn":[0,1,0,0],"pot":[512,1023,0],"accel":[0.1,-0.3],"touch":[1,0,0,1,...]}
 
-    // Pots
-    if (data.pot && Array.isArray(data.pot)) {
-      var potSliders = [$potA, $potB, $potC];
-      var potOutputs = [$potAVal, $potBVal, $potCVal];
-      var potSources = ["pot_a", "pot_b", "pot_c"];
-      for (var p = 0; p < data.pot.length && p < 3; p++) {
-        var rawVal = data.pot[p];
-        var displayVal = clamp(Math.round(rawVal), 0, 1023);
-        if (potSliders[p]) {
-          potSliders[p].value = displayVal;
-          if (potOutputs[p]) potOutputs[p].textContent = displayVal;
-          applyNormalizedInput(potSources[p], displayVal / 1023);
-        }
-      }
-    }
+     // Pots (handle dynamic pot tracking)
+     if (data.pot && Array.isArray(data.pot)) {
+       for (var p = 0; p < data.pot.length && p < state.pots.length; p++) {
+         var rawVal = data.pot[p];
+         var displayVal = clamp(Math.round(rawVal), 0, 1023);
+         var potRec = state.pots[p];
+         if (potRec && potRec.slider) {
+           potRec.slider.value = displayVal;
+           if (potRec.output) potRec.output.textContent = displayVal;
+           applyNormalizedInput("pot_" + potRec.id, displayVal / 1023);
+         }
+       }
+     }
 
-    // Accelerometer
-    if (data.accel && Array.isArray(data.accel)) {
-      var accelSliders = [$accelX, $accelY];
-      var accelOutputs = [$accelXVal, $accelYVal];
-      var accelSources = ["accel_x", "accel_y"];
-      for (var a = 0; a < data.accel.length && a < 2; a++) {
-        var accelRaw = data.accel[a];
-        var accelDisplay = clamp(Math.round(accelRaw * 1000), -1000, 1000);
-        if (accelSliders[a]) {
-          accelSliders[a].value = accelDisplay;
-          if (accelOutputs[a]) accelOutputs[a].textContent = accelDisplay;
-          applyNormalizedInput(accelSources[a], (accelDisplay + 1000) / 2000);
-        }
-      }
-    }
+     // Accelerometer
+     if (data.accel && Array.isArray(data.accel)) {
+       var accelSliders = [$accelX, $accelY];
+       var accelOutputs = [$accelXVal, $accelYVal];
+       var accelSources = ["accel_x", "accel_y"];
+       for (var a = 0; a < data.accel.length && a < 2; a++) {
+         var accelRaw = data.accel[a];
+         var accelDisplay = clamp(Math.round(accelRaw * 1000), -1000, 1000);
+         if (accelSliders[a]) {
+           accelSliders[a].value = accelDisplay;
+           if (accelOutputs[a]) accelOutputs[a].textContent = accelDisplay;
+           applyNormalizedInput(accelSources[a], (accelDisplay + 1000) / 2000);
+         }
+       }
+     }
 
-    // Buttons
-    if (data.btn && Array.isArray(data.btn)) {
-      for (var b = 0; b < data.btn.length; b++) {
-        var pressed = data.btn[b] === 1;
-        // Map button index to keyboard key (first keys)
-        if (b < 11) {
-          var noteIdx = b;
-          if (pressed) {
-            if (!activeKeys[noteIdx]) {
-              handleKeyPress(noteIdx);
-            }
-          } else {
-            handleKeyRelease(noteIdx);
-          }
-        }
-      }
-    }
+     // Buttons
+     if (data.btn && Array.isArray(data.btn)) {
+       for (var b = 0; b < data.btn.length; b++) {
+         var pressed = data.btn[b] === 1;
+         // Map button index to keyboard key (first keys)
+         if (b < 11) {
+           var noteIdx = b;
+           if (pressed) {
+             if (!activeKeys[noteIdx]) {
+               handleKeyPress(noteIdx);
+             }
+           } else {
+             handleKeyRelease(noteIdx);
+           }
+         }
+       }
+     }
 
-    // Touch (MPR121)
-    if (data.touch && Array.isArray(data.touch)) {
-      for (var tc = 0; tc < data.touch.length && tc < 12; tc++) {
-        var touchActive = data.touch[tc] === 1;
-        var noteIndex = tc % 11;
-        if (touchActive) {
-          if (!activeKeys[noteIndex]) {
-            handleKeyPress(noteIndex);
-          }
-        } else {
-          handleKeyRelease(noteIndex);
-        }
-      }
-    }
-  }
+     // Touch (MPR121)
+     if (data.touch && Array.isArray(data.touch)) {
+       for (var tc = 0; tc < data.touch.length && tc < 12; tc++) {
+         var touchActive = data.touch[tc] === 1;
+         var noteIndex = tc % 11;
+         if (touchActive) {
+           if (!activeKeys[noteIndex]) {
+             handleKeyPress(noteIndex);
+           }
+         } else {
+           handleKeyRelease(noteIndex);
+         }
+       }
+     }
+   }
 
   // =========================================================================
   // Voice selection handler
@@ -2209,8 +2564,9 @@
     // Initial pinout render
     updatePinout();
 
-    // Initial code generation
+    // Initial code generation and requirements
     updateCodeOutput();
+    updateRequirementsList();
 
     // Waveform animation
     initWaveformAnimation();
