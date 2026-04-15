@@ -667,6 +667,7 @@ details.expandable--nested[open] {
   cursor: pointer;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
   transition: background var(--transition-fast), box-shadow var(--transition-fast);
 }
 
@@ -2390,14 +2391,8 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
   }
 
   .key.white {
-    width: 32px;
-    height: 110px;
-  }
-
-  .key.black {
-    width: 22px;
-    height: 68px;
-    margin-left: -11px;
+    width: 30px;
+    height: 100px;
   }
 
   .key-note {
@@ -2408,8 +2403,20 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
     font-size: 0.48rem;
   }
 
+  .key-column .key-assign select {
+    width: 32px;
+    font-size: 0.5rem;
+    padding: 1px 2px;
+  }
+
   .keyboard-container {
     padding: 12px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .keyboard {
+    min-width: 340px;
   }
 
   .live-area__pots {
