@@ -470,7 +470,8 @@
 					const properties = knob._properties;
 					if (!properties.readonly) {
 						e.preventDefault();
-						knob.setValueFloating(mouseEventToValue(e, properties));
+						knob._dragStartY = e.clientY;
+						knob._dragStartVal = properties.val;
 					}
 					knob._mousebutton = true;
 				}
@@ -489,7 +490,11 @@
 					const properties = knob._properties;
 					if (!properties.readonly) {
 						e.preventDefault();
-						knob.setValueFloating(mouseEventToValue(e, properties));
+						const dy = knob._dragStartY - e.clientY;
+						const range = properties.valMax - properties.valMin;
+						const sensitivity = Math.max(range / 200, 1);
+						const newVal = knob._dragStartVal + (dy * sensitivity);
+						knob.setValueFloating(newVal);
 					}
 				}
 			};
@@ -518,6 +523,9 @@
 					const touches = e.targetTouches;
 					if (touches.length === 1) {
 						knob._mousebutton = true;
+						knob._dragStartY = touches.item(0).clientY;
+						knob._dragStartVal = properties.val;
+
 						if (knob._touchCount === 0) {
 							const f = function() {
 								if (knob._touchCount === 2) {
@@ -534,7 +542,6 @@
 							knob._timeoutDoubleTap = window.setTimeout(f, 500);
 						}
 						knob._touchCount++;
-						knob.setValueFloating(touchEventToValue(e, properties));
 					}
 				}
 			};
@@ -546,7 +553,11 @@
 						const touches = e.targetTouches;
 						if (touches.length === 1) {
 							e.preventDefault();
-							knob.setValueFloating(touchEventToValue(e, properties));
+							const dy = knob._dragStartY - touches.item(0).clientY;
+							const range = properties.valMax - properties.valMin;
+							const sensitivity = Math.max(range / 200, 1);
+							const newVal = knob._dragStartVal + (dy * sensitivity);
+							knob.setValueFloating(newVal);
 						}
 					}
 				}

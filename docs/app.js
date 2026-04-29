@@ -1228,6 +1228,7 @@
     if (!paletteEl) return;
 
     paletteEl.innerHTML = '';
+    paletteEl.className = 'palette-param-grid';
     palettePots = {};
     var params = def.params;
 
@@ -1289,7 +1290,7 @@
           step: sliderStep(p.min, p.max),
           value: currentVal,
           color: CircularPot.COLOR_PURPLE,
-          size: 52,
+          size: 40,
           onChange: function (name, val) {
             state.paramValues[name] = val;
             if (browserVoice && typeof browserVoice.setParam === 'function') {
@@ -1312,7 +1313,8 @@
         var trigBtn = document.createElement('button');
         trigBtn.type = 'button';
         trigBtn.className = 'btn btn-sm';
-        trigBtn.textContent = p.label;
+        trigBtn.textContent = '\u25b6';
+        trigBtn.style.fontSize = '0.7rem';
         trigBtn.addEventListener('click', function () {
           ensureAudioInit().then(function () {
             if (browserVoice && typeof browserVoice.setParam === 'function') {
@@ -1324,11 +1326,6 @@
       }
 
       row.appendChild(info);
-
-      var handle = document.createElement('span');
-      handle.className = 'palette-drag-handle';
-      handle.textContent = '\u2261';
-      row.appendChild(handle);
 
       row.addEventListener('dragstart', function (e) {
         var paramName = this.getAttribute('data-param');

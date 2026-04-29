@@ -129,24 +129,25 @@ svg {
 /* --- Controls Grid (assignable fields) --- */
 
 .controls-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 12px;
-  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
 }
 
 .control-field {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 10px;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
   background: rgba(139, 92, 246, 0.04);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 6px;
 }
 
 .control-field label {
-  font-size: 0.82rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: var(--text);
 }

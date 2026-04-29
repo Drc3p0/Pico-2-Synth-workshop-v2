@@ -346,12 +346,13 @@
 /* ===================== Controls Promotable Row ===================== */
 
 .controls-promotable {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 8px;
+  gap: 4px;
+  padding: 3px 6px;
   border-radius: 6px;
   transition: background 0.15s;
+  font-size: 0.75rem;
 }
 
 .controls-promotable[draggable="true"] {
@@ -365,7 +366,7 @@
 .controls-promotable .promote-handle {
   color: var(--ws-text-dim);
   opacity: 0.3;
-  font-size: 0.85rem;
+  font-size: 0.7rem;
   transition: opacity 0.15s;
 }
 
@@ -374,20 +375,40 @@
   color: var(--ws-purple);
 }
 
+.controls-promotable label {
+  font-size: 0.75rem;
+}
+
+.controls-promotable select,
+.controls-promotable input[type="range"] {
+  font-size: 0.7rem;
+  padding: 1px 3px;
+  max-width: 120px;
+}
+
 /* ===================== Palette ===================== */
+
+.palette-param-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
 
 .palette-param-row {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
+  gap: 2px;
+  padding: 6px 8px;
   background: var(--ws-bg-card);
   border: 1px solid var(--ws-border);
   border-radius: 8px;
-  margin-bottom: 6px;
   cursor: grab;
   transition: border-color 0.15s, box-shadow 0.15s;
   user-select: none;
+  width: 80px;
+  min-height: 80px;
+  text-align: center;
 }
 
 .palette-param-row:hover {
@@ -406,22 +427,20 @@
   flex-shrink: 0;
 }
 
-.palette-param-info { flex: 1; min-width: 0; }
-.palette-param-name { font-size: 0.85rem; font-weight: 500; color: var(--ws-text); }
-.palette-param-range { font-size: 0.65rem; color: var(--ws-text-dim); }
-
-.palette-drag-handle {
-  color: var(--ws-text-dim);
-  font-size: 1rem;
-  flex-shrink: 0;
-  opacity: 0.4;
-  transition: opacity 0.15s;
+.palette-param-info { min-width: 0; }
+.palette-param-name {
+  font-size: 0.6rem;
+  font-weight: 500;
+  color: var(--ws-text);
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 70px;
+  white-space: nowrap;
 }
+.palette-param-range { display: none; }
 
-.palette-param-row:hover .palette-drag-handle {
-  opacity: 1;
-  color: var(--ws-purple);
-}
+.palette-drag-handle { display: none; }
 
 /* ===================== Key Palette ===================== */
 
