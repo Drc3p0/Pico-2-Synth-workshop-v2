@@ -3,13 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pico 2 Synth Workshop — Web Configurator</title>
+  <title>Pico 2 Synth Workshop - Web Configurator</title>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="workspace.css">
 </head>
 <body>
 
-  <!-- ===== 1. Header ===== -->
   <header class="header">
     <h1>Pico 2 Synth Workshop</h1>
     <p>Configure your synth, play it live, download the code.</p>
@@ -18,12 +17,9 @@
 
   <main>
 
-    <!-- ===== 2. Setup / Onboarding ===== -->
     <details class="expandable" id="onboarding">
       <summary>Setup Guide</summary>
       <div class="onboarding-content">
-
-        <!-- Board selector (first field) -->
         <div class="control-row board-selector-row">
           <label for="board-select">Board Type</label>
           <select id="board-select">
@@ -34,121 +30,41 @@
             RP2350 - Uses internal pull-down resistors. Buttons wire to 3V3.
           </p>
         </div>
-
         <ol class="setup-steps">
           <li>
             <h3>Step 1: Download Firmware (.uf2)</h3>
-            <p>
-              Download the synth workshop UF2 firmware for your board. This firmware
-              stores your configuration in flash memory and reads settings from a JSON
-              file, so you can update your synth setup without re-flashing.
-            </p>
+            <p>Download the synth workshop UF2 firmware for your board.</p>
             <p id="uf2-link-pico2">
-              <a href="https://circuitpython.org/board/raspberry_pi_pico2/"
-                 target="_blank" rel="noopener noreferrer">
-                Download for Pico 2 (RP2350)
-              </a>
+              <a href="https://circuitpython.org/board/raspberry_pi_pico2/" target="_blank" rel="noopener noreferrer">Download for Pico 2 (RP2350)</a>
             </p>
             <p id="uf2-link-pico" style="display:none">
-              <a href="https://circuitpython.org/board/raspberry_pi_pico/"
-                 target="_blank" rel="noopener noreferrer">
-                Download for Pico (RP2040)
-              </a>
+              <a href="https://circuitpython.org/board/raspberry_pi_pico/" target="_blank" rel="noopener noreferrer">Download for Pico (RP2040)</a>
             </p>
           </li>
-
-          <li>
-            <h3>Step 2: Flash the Board</h3>
-            <p>
-              Hold the <strong>BOOTSEL</strong> button while plugging the board into USB.
-              A drive named <strong>RPI-RP2</strong> will appear. Drag the downloaded
-              <code>.uf2</code> file onto that drive. The board reboots automatically and
-              a new drive named <strong>CIRCUITPY</strong> will appear.
-            </p>
-          </li>
-
-          <li>
-            <h3>Step 3: Upload Configuration</h3>
-            <p>
-              Use the <strong>"Download JSON"</strong> button in the Generated Code section
-              to save your synth configuration. Copy the <code>synth-config.json</code>
-              file to the root of the <strong>CIRCUITPY</strong> drive. The firmware reads
-              this file on boot to set up your synth, so you can tweak settings by editing
-              the JSON rather than re-flashing.
-            </p>
-          </li>
-
-          <li>
-            <h3>Step 4: Install Libraries</h3>
-            <p>
-              Copy the required CircuitPython libraries to the <code>lib/</code> folder on
-              the <strong>CIRCUITPY</strong> drive. You may need:
-            </p>
-            <ul>
-              <li><code>adafruit_mpr121.mpy</code></li>
-              <li><code>adafruit_lis3dh.mpy</code></li>
-              <li><code>adafruit_ssd1306.mpy</code></li>
-              <li><code>adafruit_midi/</code></li>
-              <li><code>adafruit_bus_device/</code></li>
-            </ul>
-            <p>
-              Get these from the
-              <a href="https://circuitpython.org/libraries"
-                 target="_blank" rel="noopener noreferrer">
-                CircuitPython Library Bundle</a>.
-            </p>
-          </li>
-
-          <li>
-            <h3>Step 5: Copy WAV Files (if needed)</h3>
-            <p class="note">
-              If using WAV wavetables, also copy the <code>wav/</code>
-              folder to your CIRCUITPY drive.
-            </p>
-          </li>
+          <li><h3>Step 2: Flash Firmware</h3><p>Hold BOOTSEL, plug in USB, drag .uf2 onto the mass storage device.</p></li>
+          <li><h3>Step 3: Copy Code</h3><p>Copy <code>code.py</code> and <code>synth-config.json</code> to the CIRCUITPY drive.</p></li>
+          <li><h3>Step 4: Install Libraries</h3><p>Copy required <code>.mpy</code> files from the <a href="https://github.com/adafruit/Adafruit_CircuitPython_Bundle/releases" target="_blank">Adafruit bundle</a> to <code>CIRCUITPY/lib/</code>.</p></li>
+          <li><h3>Step 5: Copy WAV Files (if needed)</h3><p class="note">If using WAV wavetables, also copy the <code>wav/</code> folder to your CIRCUITPY drive.</p></li>
         </ol>
-
-        <!-- Board-specific wiring note -->
         <div class="board-wiring-note" id="board-wiring-note">
           <h3>Wiring Note for Your Board</h3>
           <div id="wiring-note-pico2">
-            <p>
-              <strong>Pico 2 (RP2350):</strong> Uses internal <strong>pull-down</strong>
-              resistors. Wire buttons between the GPIO pin and <strong>3V3</strong>.
-              When pressed, the pin reads HIGH.
-            </p>
-            <div class="wiring-diagram">
-<pre>
-    <span class="pin-label">GP0-GP7</span> ----[ Button ]---- <span class="pin-label">3V3</span>
-                  (pull-down enabled in software)
-</pre>
-            </div>
+            <p><strong>Pico 2 (RP2350):</strong> Uses internal <strong>pull-down</strong> resistors. Wire buttons between the GPIO pin and <strong>3V3</strong>.</p>
+            <div class="wiring-diagram"><pre>    <span class="pin-label">GP0-GP7</span> ----[ Button ]---- <span class="pin-label">3V3</span>
+                  (pull-down enabled in software)</pre></div>
           </div>
           <div id="wiring-note-pico" style="display:none">
-            <p>
-              <strong>Pico (RP2040):</strong> Uses internal <strong>pull-up</strong>
-              resistors. Wire buttons between the GPIO pin and <strong>GND</strong>.
-              When pressed, the pin reads LOW.
-            </p>
-            <div class="wiring-diagram">
-<pre>
-    <span class="pin-label">GP0-GP7</span> ----[ Button ]---- <span class="pin-label">GND</span>
-                  (pull-up enabled in software)
-</pre>
-            </div>
+            <p><strong>Pico (RP2040):</strong> Uses internal <strong>pull-up</strong> resistors. Wire buttons between the GPIO pin and <strong>GND</strong>.</p>
+            <div class="wiring-diagram"><pre>    <span class="pin-label">GP0-GP7</span> ----[ Button ]---- <span class="pin-label">GND</span>
+                  (pull-up enabled in software)</pre></div>
           </div>
         </div>
-
       </div>
     </details>
 
-    <!-- ===== 3. Controls Section ===== -->
-    <section class="step-card" id="controls-section">
-      <h2>Controls</h2>
-
-      <!-- Voice selector -->
-      <div class="control-row">
-        <label for="voice-select">Voice</label>
+    <section class="step-card" id="voice-section">
+      <div class="control-row" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <label for="voice-select" style="font-weight:600">Voice</label>
         <select id="voice-select">
           <option value="eighties-dystopia">Eighties Dystopia</option>
           <option value="tiny-lfo-song">Tiny LFO Song</option>
@@ -158,179 +74,115 @@
           <option value="falling-forever">Falling Forever</option>
           <option value="deep-note">Deep Note</option>
         </select>
-      </div>
-
-      <!-- Row of controls -->
-      <div class="control-row controls-inline">
-        <label><input type="checkbox" id="wav-toggle"> Use WAV files</label>
-        <label><input type="checkbox" id="latch-toggle"> Latch</label>
-      </div>
-
-      <!-- Scale / Arpeggiator controls with assignable fields -->
-      <div class="control-row controls-grid" id="controls-grid">
-        <div class="control-field">
-          <label for="scale-select">Scale</label>
-          <select id="scale-select">
-            <option value="chromatic">Chromatic</option>
-            <option value="pentatonic_major" selected>Pentatonic Major</option>
-            <option value="pentatonic_minor">Pentatonic Minor</option>
-            <option value="blues_major">Blues Major</option>
-            <option value="blues_minor">Blues Minor</option>
-            <option value="dorian">Dorian</option>
-            <option value="mixolydian">Mixolydian</option>
-            <option value="harmonic_minor">Harmonic Minor</option>
+        <label style="font-size:0.75rem;color:var(--ws-text-dim)">
+          <input type="checkbox" id="voice-hw-assign-toggle"> Assign to hardware
+        </label>
+        <div id="voice-hw-assign-config" style="display:none">
+          <select id="voice-hw-mode">
+            <option value="">Choose...</option>
+            <option value="pot_split">Pot (split range)</option>
+            <option value="button_cycle">Button (cycle)</option>
+            <option value="multi_button">Multi-button (select)</option>
           </select>
-          <div class="assign-field">
-            <select class="assign-input-type" id="assign-scale-type"><option value="none">--</option><option value="pot">POT</option><option value="button">BTN</option></select>
-            <select class="assign-gpio" id="assign-scale-gpio"></select>
-          </div>
-        </div>
-
-        <div class="control-field">
-          <label>Major / Minor</label>
-          <button id="btn-tonality" class="btn btn-sm btn-toggle">Major</button>
-          <div class="assign-field">
-            <select class="assign-input-type" id="assign-tonality-type"><option value="none">--</option><option value="button">BTN</option></select>
-            <select class="assign-gpio" id="assign-tonality-gpio"></select>
-          </div>
-        </div>
-
-        <div class="control-field">
-          <label><input type="checkbox" id="arp-toggle"> Arpeggiator</label>
-          <div class="assign-field">
-            <select class="assign-input-type" id="assign-arp-type"><option value="none">--</option><option value="button">BTN</option><option value="pot">POT</option></select>
-            <select class="assign-gpio" id="assign-arp-gpio"></select>
-          </div>
-        </div>
-
-        <div class="control-field" id="arp-pattern-field">
-          <label for="arp-pattern">Arp Pattern</label>
-          <select id="arp-pattern">
-            <option value="up">Up</option>
-            <option value="down">Down</option>
-            <option value="updown">Up-Down</option>
-            <option value="random">Random</option>
-          </select>
-          <div class="assign-field">
-            <select class="assign-input-type" id="assign-arp-pattern-type"><option value="none">--</option><option value="pot">POT</option><option value="button">BTN</option></select>
-            <select class="assign-gpio" id="assign-arp-pattern-gpio"></select>
-          </div>
-        </div>
-
-        <div class="control-field" id="arp-speed-field">
-          <label for="arp-speed">Arp Speed <span id="arp-speed-val">120</span> BPM</label>
-          <input type="range" id="arp-speed" min="40" max="300" value="120">
-          <div class="assign-field">
-            <select class="assign-input-type" id="assign-arp-speed-type"><option value="none">--</option><option value="pot">POT</option></select>
-            <select class="assign-gpio" id="assign-arp-speed-gpio"></select>
-          </div>
-        </div>
-
-        <div class="control-field">
-          <label><input type="checkbox" id="loop-toggle"> Loop Record</label>
-          <div class="assign-field">
-            <select class="assign-input-type" id="assign-loop-type"><option value="none">--</option><option value="button">BTN</option></select>
-            <select class="assign-gpio" id="assign-loop-gpio"></select>
-          </div>
+          <select id="voice-hw-gpio" style="display:none"></select>
         </div>
       </div>
     </section>
 
-    <!-- ===== 4. Waveform Animation ===== -->
-    <div class="waveform-container">
-      <canvas id="waveform-canvas" width="400" height="80"></canvas>
-    </div>
-
-    <!-- ===== 5. Piano Keyboard ===== -->
-    <div class="keyboard-container">
-      <div class="keyboard" id="keyboard"></div>
-      <div class="keyboard-controls">
-        <div class="oct-control">
-          <button id="octave-down" class="btn btn-sm">&#9664; Oct -</button>
-          <div class="assign-field assign-field-sm">
-            <select class="assign-input-type" id="assign-oct-down-type"><option value="none">--</option><option value="button">BTN</option></select>
-            <select class="assign-gpio" id="assign-oct-down-gpio"></select>
-          </div>
-        </div>
-        <span id="octave-display">Octave 3</span>
-        <div class="oct-control">
-          <button id="octave-up" class="btn btn-sm">Oct + &#9654;</button>
-          <div class="assign-field assign-field-sm">
-            <select class="assign-input-type" id="assign-oct-up-type"><option value="none">--</option><option value="button">BTN</option></select>
-            <select class="assign-gpio" id="assign-oct-up-gpio"></select>
-          </div>
-        </div>
-        <div class="oct-control">
-          <label class="oct-pot-label">Oct Pot</label>
-          <div class="assign-field assign-field-sm">
-            <select class="assign-input-type" id="assign-oct-pot-type"><option value="none">--</option><option value="pot">POT</option></select>
-            <select class="assign-gpio" id="assign-oct-pot-gpio"></select>
-          </div>
-        </div>
-      </div>
-      <p class="keyboard-hint">Play: A S D F G H J K L ; ' &nbsp;|&nbsp; Octave: Z / X</p>
-    </div>
-
-    <!-- ===== 6. Workspace: Parameter Palette + Drop Zone ===== -->
-    <section class="step-card" id="param-section">
-      <h2>Synth Builder</h2>
-      <p class="workspace-instructions">Drag parameters or keys into the workspace to make them hardware-adjustable. Unchecked parameters stay hard-set at their knob value.</p>
-      <div class="workspace-layout">
-        <div class="workspace-palette" id="workspace-palette">
-          <h3 class="palette-section-title">Parameters</h3>
-          <div id="param-palette"></div>
-          <h3 class="palette-section-title" style="margin-top:16px">Keyboard</h3>
-          <div id="key-palette"></div>
-        </div>
-        <div class="workspace-dropzone" id="workspace-dropzone">
-          <div class="workspace-dropzone-header">&#9881; Active Hardware</div>
-        </div>
-      </div>
-      <div id="param-panel" style="display:none"></div>
+    <section class="step-card" id="hw-zone-section">
+      <h2>Active Hardware</h2>
+      <p class="workspace-instructions">Drag parameters, keys, or controls here. Freely arrange items to match your physical hardware layout.</p>
+      <div id="hw-zone-container" class="hw-zone-container"></div>
     </section>
 
-    <!-- ===== 7. Continuous Inputs ===== -->
-    <section class="step-card" id="inputs-section">
-      <h2>Live Inputs</h2>
-      <div class="live-inputs-grid">
-        <div class="live-inputs-column">
-          <h3 class="live-inputs-heading">Potentiometers</h3>
-          <div id="pot-list">
-            <div class="live-input-row" data-pot="0">
-              <label>Pot A</label>
-              <div class="assign-field">
-                <select class="assign-gpio" id="pot-0-gpio">
-                  <option value="GP26" selected>GP26</option>
-                  <option value="GP27">GP27</option>
-                  <option value="GP28">GP28</option>
-                </select>
-              </div>
-              <input type="range" id="pot-a" min="0" max="1023" value="512">
-              <output id="pot-a-val">512</output>
+    <div class="waveform-container" id="waveform-section">
+      <div class="waveform-draggable" draggable="true" id="waveform-draggable">
+        <canvas id="waveform-canvas" width="400" height="80"></canvas>
+        <div class="waveform-drag-hint">Drag into Active Hardware to assign to OLED</div>
+      </div>
+    </div>
+
+    <section class="step-card" id="controls-section">
+      <h2 class="section-title-collapsible" id="controls-collapse-toggle">
+        <span class="collapse-arrow">&#9660;</span> Controls
+        <span style="font-size:0.65rem;color:var(--ws-text-dim);margin-left:8px">(drag items into Active Hardware to promote)</span>
+      </h2>
+      <div id="controls-body">
+        <div class="control-row controls-inline">
+          <label><input type="checkbox" id="wav-toggle"> Use WAV files</label>
+          <label><input type="checkbox" id="latch-toggle"> Latch</label>
+        </div>
+
+        <div class="control-row controls-grid" id="controls-grid">
+          <div class="control-field controls-promotable" draggable="true" data-control="scale">
+            <span class="promote-handle">&#8801;</span>
+            <label for="scale-select">Scale</label>
+            <select id="scale-select">
+              <option value="chromatic">Chromatic</option>
+              <option value="pentatonic_major" selected>Pentatonic Major</option>
+              <option value="pentatonic_minor">Pentatonic Minor</option>
+              <option value="blues_major">Blues Major</option>
+              <option value="blues_minor">Blues Minor</option>
+              <option value="dorian">Dorian</option>
+              <option value="mixolydian">Mixolydian</option>
+              <option value="harmonic_minor">Harmonic Minor</option>
+            </select>
+          </div>
+
+          <div class="control-field controls-promotable" draggable="true" data-control="tonality">
+            <span class="promote-handle">&#8801;</span>
+            <label>Major / Minor</label>
+            <button id="btn-tonality" class="btn btn-sm btn-toggle">Major</button>
+          </div>
+
+          <div class="control-field controls-promotable" draggable="true" data-control="arp">
+            <span class="promote-handle">&#8801;</span>
+            <label><input type="checkbox" id="arp-toggle"> Arpeggiator</label>
+          </div>
+
+          <div class="control-field controls-promotable" draggable="true" data-control="arp_pattern" id="arp-pattern-field">
+            <span class="promote-handle">&#8801;</span>
+            <label for="arp-pattern">Arp Pattern</label>
+            <select id="arp-pattern">
+              <option value="up">Up</option>
+              <option value="down">Down</option>
+              <option value="updown">Up-Down</option>
+              <option value="random">Random</option>
+            </select>
+          </div>
+
+          <div class="control-field controls-promotable" draggable="true" data-control="arp_speed" id="arp-speed-field">
+            <span class="promote-handle">&#8801;</span>
+            <label for="arp-speed">Arp Speed <span id="arp-speed-val">120</span> BPM</label>
+            <input type="range" id="arp-speed" min="40" max="300" value="120">
+          </div>
+
+          <div class="control-field controls-promotable" draggable="true" data-control="loop">
+            <span class="promote-handle">&#8801;</span>
+            <label><input type="checkbox" id="loop-toggle"> Loop Record</label>
+          </div>
+
+          <div class="control-field">
+            <div class="oct-control">
+              <button id="octave-down" class="btn btn-sm">&#9664; Oct -</button>
+              <span id="octave-display">Octave 3</span>
+              <button id="octave-up" class="btn btn-sm">Oct + &#9654;</button>
             </div>
           </div>
-          <button class="btn btn-sm" id="add-pot-btn">+ Add Pot</button>
-        </div>
-
-        <div class="live-inputs-column">
-          <h3 class="live-inputs-heading">I2C Devices</h3>
-          <div class="live-input-row hw-device" id="mpr121-row">
-            <label><input type="checkbox" id="mpr121-enabled"> MPR121 Touch</label>
-            <span class="hw-status" id="mpr121-status">Not connected</span>
-          </div>
-          <div class="live-input-row hw-device" id="accel-row">
-            <label><input type="checkbox" id="accel-enabled"> Accelerometer</label>
-            <span class="hw-status" id="accel-status">Not connected</span>
-          </div>
-          <div class="slider-group" id="accel-sliders">
-            <label>Accel X <input type="range" id="accel-x" min="-1000" max="1000" value="0"><output id="accel-x-val">0</output></label>
-            <label>Accel Y <input type="range" id="accel-y" min="-1000" max="1000" value="0"><output id="accel-y-val">0</output></label>
-          </div>
         </div>
       </div>
     </section>
 
-    <!-- ===== 8. Pinout Diagram ===== -->
+    <section class="step-card" id="param-section">
+      <h2>Parameter Palette</h2>
+      <p class="workspace-instructions">Drag parameters or keys into Active Hardware above. Unchecked parameters stay hard-set at their knob value.</p>
+      <div id="param-palette"></div>
+      <h3 class="palette-section-title" style="margin-top:16px">Keyboard</h3>
+      <div id="key-palette"></div>
+      <p class="keyboard-hint">Play: A S D F G H J K L ; ' &nbsp;|&nbsp; Octave: Z / X</p>
+      <div class="keyboard" id="keyboard" style="display:none"></div>
+    </section>
+
     <details class="expandable">
       <summary>Pinout Diagram</summary>
       <div class="pinout-board-select">
@@ -344,174 +196,39 @@
       <div id="pinout-container"></div>
     </details>
 
-    <!-- ===== 9. Wiring Guide ===== -->
     <details class="expandable">
       <summary>Wiring Guide</summary>
       <div class="wiring-guide">
-
         <h3>Buttons</h3>
-        <p id="btn-wiring-desc-pico2">
-          Connect momentary push buttons between a GPIO pin and <strong>3V3</strong>. Internal pull-down
-          resistors are enabled in software (RP2350), so no external resistors are needed. When
-          pressed, the pin reads HIGH. Any of GP0&ndash;GP7 can be used.
-        </p>
-        <p id="btn-wiring-desc-pico" style="display:none">
-          Connect momentary push buttons between a GPIO pin and <strong>GND</strong>. Internal pull-up
-          resistors are enabled in software (RP2040), so no external resistors are needed. When
-          pressed, the pin reads LOW. Any of GP0&ndash;GP7 can be used.
-        </p>
-        <div class="wiring-diagram" id="btn-wiring-diag-pico2">
-<pre>
-    <span class="pin-label">GP0&ndash;GP7</span> ----[ Button ]---- <span class="pin-label">3V3</span>
-                  (pull-down, normally open)
-</pre>
-        </div>
-        <div class="wiring-diagram" id="btn-wiring-diag-pico" style="display:none">
-<pre>
-    <span class="pin-label">GP0&ndash;GP7</span> ----[ Button ]---- <span class="pin-label">GND</span>
-                  (pull-up, normally open)
-</pre>
-        </div>
-
+        <p id="btn-wiring-desc-pico2">Connect momentary push buttons between a GPIO pin and <strong>3V3</strong>. Internal pull-down resistors are enabled in software (RP2350), so no external resistors are needed.</p>
+        <p id="btn-wiring-desc-pico" style="display:none">Connect momentary push buttons between a GPIO pin and <strong>GND</strong>. Internal pull-up resistors are enabled in software (RP2040), so no external resistors are needed.</p>
+        <div class="wiring-diagram" id="btn-wiring-diag-pico2"><pre>    <span class="pin-label">GP0-GP7</span> ----[ Button ]---- <span class="pin-label">3V3</span></pre></div>
+        <div class="wiring-diagram" id="btn-wiring-diag-pico" style="display:none"><pre>    <span class="pin-label">GP0-GP7</span> ----[ Button ]---- <span class="pin-label">GND</span></pre></div>
         <h3>Potentiometers</h3>
-        <p>
-          Connect 10k&ohm; potentiometers with the outer legs to 3V3 and GND, and the
-          wiper (center leg) to an ADC input pin. Maximum of 3 pots.
-        </p>
-        <div class="wiring-diagram">
-<pre>
-    <span class="pin-label">3V3</span> ----[ Pot outer leg ]
-                |
-          [ Wiper ] ---- <span class="pin-label">GP26 / GP27 / GP28</span>
-                |
-    <span class="pin-label">GND</span> ----[ Pot outer leg ]
-</pre>
-        </div>
-
-        <h3>LDR (Light Dependent Resistor)</h3>
-        <p>
-          Create a voltage divider with the LDR and a 10k&ohm; resistor. Connect one leg
-          of the LDR to 3V3 and the other to the ADC pin. Connect the 10k&ohm; resistor
-          between the ADC pin and GND. As light increases, resistance drops and the voltage
-          at the ADC pin rises.
-        </p>
-        <div class="wiring-diagram">
-<pre>
-    <span class="pin-label">3V3</span> ----[ LDR ]----+---- <span class="pin-label">GP26&ndash;GP28</span>
-                       |
-                   [ 10k&ohm; ]
-                       |
-                      <span class="pin-label">GND</span>
-</pre>
-        </div>
-
+        <p>Connect 10k&#937; pots with outer legs to 3V3 and GND, wiper to GP26/GP27/GP28.</p>
+        <div class="wiring-diagram"><pre>    <span class="pin-label">3V3</span> ----[ Pot ]---- <span class="pin-label">GP26/27/28</span> ----[ Pot ]---- <span class="pin-label">GND</span></pre></div>
+        <h3>LDR</h3>
+        <p>Voltage divider with LDR and 10k&#937; resistor. LDR to 3V3, junction to ADC pin, resistor to GND.</p>
         <h3>MPR121 Capacitive Touch</h3>
-        <p>
-          The MPR121 communicates over I2C and provides 12 capacitive touch channels
-          (0&ndash;11). Connect conductive pads (copper tape, foil, fruit, etc.) to the
-          electrode pins. The default I2C address is 0x5A. For multiple boards, change
-          the address by connecting the ADDR pin to different voltages (0x5A, 0x5B,
-          0x5C, 0x5D).
-        </p>
-        <div class="wiring-diagram">
-<pre>
-    MPR121          Pico 2
-    ------          ------
-    SDA   -------   <span class="pin-label">GP16 (SDA)</span>
-    SCL   -------   <span class="pin-label">GP17 (SCL)</span>
-    VIN   -------   <span class="pin-label">3V3</span>
-    GND   -------   <span class="pin-label">GND</span>
-
-    Electrodes 0&ndash;11 --- conductive surfaces
-</pre>
-        </div>
-
+        <p>I2C on GP16 (SDA) / GP17 (SCL). 12 touch channels per board. Address 0x5A default.</p>
         <h3>Accelerometer (LIS3DH)</h3>
-        <p>
-          The LIS3DH is a 3-axis accelerometer on the same I2C bus as the MPR121 and OLED.
-          It provides X, Y, and Z acceleration values for tilt and motion control.
-        </p>
-        <div class="wiring-diagram">
-<pre>
-    LIS3DH          Pico 2
-    ------          ------
-    SDA   -------   <span class="pin-label">GP16 (SDA)</span>
-    SCL   -------   <span class="pin-label">GP17 (SCL)</span>
-    VIN   -------   <span class="pin-label">3V3</span>
-    GND   -------   <span class="pin-label">GND</span>
-</pre>
-        </div>
-
+        <p>I2C on GP16/GP17. Provides X, Y, Z acceleration for tilt and motion control.</p>
         <h3>OLED Display (SSD1306)</h3>
-        <p>
-          A 128&times;64 SSD1306 OLED display on the shared I2C bus (address 0x3C) shows
-          the current voice name, parameter values, and status information.
-        </p>
-        <div class="wiring-diagram">
-<pre>
-    SSD1306         Pico 2
-    -------         ------
-    SDA   -------   <span class="pin-label">GP16 (SDA)</span>
-    SCL   -------   <span class="pin-label">GP17 (SCL)</span>
-    VCC   -------   <span class="pin-label">3V3</span>
-    GND   -------   <span class="pin-label">GND</span>
-</pre>
-        </div>
-
+        <p>128x64 I2C display on GP16/GP17. Address 0x3C.</p>
         <h3>Speaker (PWM Audio)</h3>
-        <p>
-          Audio output uses PWM on GP15. Run the signal through an RC low-pass filter
-          (1k&ohm; resistor + 100nF capacitor) before connecting to a speaker or
-          headphone jack.
-        </p>
-        <div class="wiring-diagram">
-<pre>
-    <span class="pin-label">GP15</span> ----[ 1k&ohm; ]----+---- Speaker + / Headphone tip
-                          |
-                      [ 100nF ]
-                          |
-                         <span class="pin-label">GND</span> ---- Speaker &minus; / Headphone sleeve
-</pre>
-        </div>
-
+        <p>PWM on GP15 through RC low-pass filter (1k&#937; + 100nF) to speaker.</p>
         <h3>Pin Summary</h3>
-        <div class="wiring-diagram">
-<pre>
-  Type            | Pins                   | Max
-  ----------------+------------------------+--------
-  Buttons         | GP0&ndash;GP7                | 8
-  Analog (pots)   | GP26, GP27, GP28       | 3
-  I2C             | GP16 (SDA), GP17 (SCL) | shared
-  Audio PWM       | GP15                   | 1
-  LED             | GP25                   | 1
-</pre>
-        </div>
-
-        <h3>Tips</h3>
-        <ul>
-          <li>All I2C devices (MPR121, LIS3DH, SSD1306) share the same bus on GP16/GP17.</li>
-          <li>Use short wires for I2C connections to avoid signal degradation.</li>
-          <li id="btn-tip-pico2">Buttons use internal pull-downs (RP2350) &mdash; wire to 3V3, no external resistors needed.</li>
-          <li id="btn-tip-pico" style="display:none">Buttons use internal pull-ups (RP2040) &mdash; wire to GND, no external resistors needed.</li>
-          <li>Keep analog wires away from the speaker/PWM line to reduce noise.</li>
-          <li>The RC filter on the audio output smooths the PWM into an analog-like signal.</li>
-          <li>For louder output, connect the filtered PWM to a small amplifier module (e.g., PAM8403).</li>
-          <li>Double-check 3V3 vs GND orientation &mdash; reversed power can damage I2C boards.</li>
-          <li>GP25 drives the onboard LED and can be used as a status indicator.</li>
-        </ul>
-
+        <div class="wiring-diagram"><pre>  Buttons: GP0-GP7 (8 max) | Analog: GP26-28 (3 max)
+  I2C: GP16/17 (shared)    | Audio: GP15    | LED: GP25</pre></div>
       </div>
     </details>
 
-    <!-- ===== 10. Generated Code ===== -->
     <details class="expandable">
       <summary>Generated Code</summary>
       <div class="code-output">
         <div class="code-requirements" id="code-requirements">
           <h3>Required Files for Your Pico</h3>
-          <div class="requirements-list" id="requirements-list">
-            <p>Select a voice and configure parameters to see requirements.</p>
-          </div>
+          <div class="requirements-list" id="requirements-list"></div>
         </div>
         <div class="code-header">
           <span class="filename">code.py</span>
@@ -523,24 +240,26 @@
           </div>
         </div>
         <div class="code-body">
-          <pre id="code-output"># Select a voice and configure parameters to generate code.</pre>
+          <pre id="code-output"></pre>
         </div>
       </div>
     </details>
 
   </main>
 
-  <!-- ===== 11. Footer ===== -->
   <footer class="footer">
     <p>Pico 2 Synth Workshop</p>
   </footer>
 
-  <!-- ===== 12. Scripts ===== -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="pureknob.js"></script>
   <script src="circular-pot.js"></script>
   <script src="component-icons.js"></script>
-  <script src="drag-drop.js"></script>
+  <script src="event-bus.js"></script>
+  <script src="voice-state.js"></script>
+  <script src="binding-resolver.js"></script>
+  <script src="hardware-zone.js"></script>
+  <script src="serial-adapter.js"></script>
   <script src="synth-engine.js"></script>
   <script src="voices/eighties-dystopia.js"></script>
   <script src="voices/tiny-lfo-song.js"></script>

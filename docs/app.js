@@ -198,6 +198,11 @@
   var animFrameId = null;
   var workspace = null;
   var palettePots = {};
+  var bus = new EventBus();
+  var voiceStateMgr = new VoiceStateManager();
+  var bindingResolver = new BindingResolver(bus);
+  var serialAdapter = new SerialAdapter(bus);
+  var hwZone = null;
 
   // Arpeggiator runtime
   var arpIntervalId = null;
@@ -1244,9 +1249,16 @@
       (function (paramName) {
         cb.addEventListener('change', function () {
           if (cb.checked) {
-            if (workspace) workspace.addParamCard(paramName);
+            if (hwZone) hwZone.addItem({ kind: 'param', paramName: paramName, x: 20, y: 20 });
           } else {
-            if (workspace) workspace.removeParamCard(paramName);
+            if (hwZone) {
+              for (var itemId in hwZone.items) {
+                if (hwZone.items[itemId].paramName === paramName) {
+                  hwZone.removeItem(itemId);
+                  break;
+                }
+              }
+            }
           }
         });
       })(pName);
@@ -1283,7 +1295,14 @@
             if (browserVoice && typeof browserVoice.setParam === 'function') {
               browserVoice.setParam(name, val);
             }
-            if (workspace) workspace.updateKnobValue(name, val);
+            if (hwZone) {
+              for (var uid in hwZone.items) {
+                if (hwZone.items[uid].paramName === name) {
+                  hwZone.items[uid]._pot && hwZone.items[uid]._pot.setValue(val);
+                  break;
+                }
+              }
+            }
             scheduleCodeUpdate();
           }
         });
@@ -1654,63 +1673,14 @@
   function updatePinout() {
     if (!window.PinoutGenerator) return;
 
-    var map = state.inputMap;
-    var buttons = [];
-    var analog = [];
-    var i2c = false;
-
-    for (var param in map) {
-      if (!map.hasOwnProperty(param)) continue;
-      var assignment = map[param];
-      if (!assignment || typeof assignment !== "object") continue;
-
-      var inputType = assignment.type;
-      var gpio = assignment.gpio;
-
-      if (inputType === "Button" && gpio) {
-        var btnNum = parseInt(gpio.replace("GP", ""), 10);
-        if (!isNaN(btnNum) && buttons.indexOf(btnNum) === -1) buttons.push(btnNum);
-      }
-      if ((inputType === "POT" || inputType === "LDR") && gpio) {
-        if (analog.indexOf(gpio) === -1) analog.push(gpio);
-      }
-      if (inputType === "MPR121" || inputType === "Accel") {
-        i2c = true;
-      }
+    var activeConnections;
+    if (hwZone) {
+      activeConnections = hwZone.getActiveConnections();
+    } else {
+      activeConnections = { buttons: null, analog: null, i2c: null, audio: true, led: false, oled: false, mpr121: false, accelerometer: false };
     }
 
-    // Also check assignMap for GPIO usage
-    for (var field in state.assignMap) {
-      if (!state.assignMap.hasOwnProperty(field)) continue;
-      var assignment = state.assignMap[field];
-      if (!assignment || assignment.type === "none") continue;
-      var gpio = assignment.gpio;
-      if (assignment.type === "button" && gpio) {
-        var gpNum = parseInt(gpio.replace("GP", ""), 10);
-        if (!isNaN(gpNum) && buttons.indexOf(gpNum) === -1) buttons.push(gpNum);
-      }
-      if (assignment.type === "pot" && gpio) {
-        if (analog.indexOf(gpio) === -1) analog.push(gpio);
-      }
-      if (assignment.type === "touch") {
-        i2c = true;
-      }
-    }
-
-    if (state.hardwareOptions.mpr121_enabled) i2c = true;
-    if (state.hardwareOptions.accelerometer_enabled) i2c = true;
-
-    var activeConnections = {
-      buttons: buttons.length ? buttons : null,
-      analog: analog.length ? analog : null,
-      i2c: i2c || null,
-      audio: true,
-      led: false,
-      oled: false,
-      mpr121: state.hardwareOptions.mpr121_enabled,
-      accelerometer: state.hardwareOptions.accelerometer_enabled
-    };
-
+    activeConnections.audio = true;
     PinoutGenerator.render("pinout-container", activeConnections);
   }
 
@@ -2468,35 +2438,86 @@
     var voiceKey = selectToKey(val);
     if (!VOICES[voiceKey]) return;
 
-    // Stop current voice and arpeggiator
     stopBrowserVoice();
     stopArpeggiator();
-
-    // Release all notes
     releaseAllLatched();
     releaseAllActive();
 
-    // Update state
+    var prevVoice = state.selectedVoice;
+    if (hwZone && prevVoice) {
+      voiceStateMgr.snapshot(prevVoice, {
+        params: state.paramValues,
+        layout: hwZone.getState().layout,
+        bindings: hwZone.getState().bindings,
+        gpioAssignments: hwZone.getState().gpioAssignments,
+        zoneMinHeight: hwZone._minHeight
+      });
+    }
+
     state.selectedVoice = voiceKey;
+    voiceStateMgr.setActive(voiceKey);
 
-    // Initialize param values
-    initParamValues(voiceKey);
-
-    if (workspace) workspace.clear();
+    var restored = voiceStateMgr.restore(voiceKey);
+    if (restored) {
+      state.paramValues = restored.params;
+      if (hwZone) hwZone.restoreLayout(restored);
+    } else {
+      initParamValues(voiceKey);
+      if (hwZone) hwZone.clear();
+    }
 
     renderParamPanel();
 
-    // Create new browser voice (don't auto-play)
     if (audioInitDone) {
       browserVoice = createBrowserVoice(voiceKey);
       syncParamsToVoice();
     }
 
-    // Update pinout
     updatePinout();
-
-    // Update code
     scheduleCodeUpdate();
+  }
+
+  function initControlsPromotion() {
+    var promotables = document.querySelectorAll('.controls-promotable[draggable="true"]');
+    for (var i = 0; i < promotables.length; i++) {
+      (function (el) {
+        el.addEventListener('dragstart', function (e) {
+          var controlName = el.getAttribute('data-control');
+          var label = el.querySelector('label');
+          var labelText = label ? label.textContent.trim() : controlName;
+          e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'control', name: controlName, label: labelText }));
+          e.dataTransfer.effectAllowed = 'move';
+        });
+      })(promotables[i]);
+    }
+  }
+
+  function initWaveformDrag() {
+    var wfDraggable = document.getElementById('waveform-draggable');
+    if (!wfDraggable) return;
+    wfDraggable.addEventListener('dragstart', function (e) {
+      e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'waveform' }));
+      e.dataTransfer.effectAllowed = 'move';
+    });
+  }
+
+  function initVoiceHwAssign() {
+    var toggle = document.getElementById('voice-hw-assign-toggle');
+    var configDiv = document.getElementById('voice-hw-assign-config');
+    if (!toggle || !configDiv) return;
+    toggle.addEventListener('change', function () {
+      configDiv.style.display = toggle.checked ? '' : 'none';
+    });
+  }
+
+  function initControlsCollapse() {
+    var toggle = document.getElementById('controls-collapse-toggle');
+    var body = document.getElementById('controls-body');
+    if (!toggle || !body) return;
+    toggle.addEventListener('click', function () {
+      toggle.classList.toggle('collapsed');
+      body.style.display = toggle.classList.contains('collapsed') ? 'none' : '';
+    });
   }
 
   // =========================================================================
@@ -2520,9 +2541,10 @@
     // Render parameter panel
     renderParamPanel();
 
-    workspace = new WorkspaceManager({
-      onStateChange: function (wsState) {
-        state.workspaceState = wsState;
+    hwZone = new HardwareZone({
+      bus: bus,
+      onStateChange: function (zoneState) {
+        state.workspaceState = zoneState;
         updatePinout();
         scheduleCodeUpdate();
       },
@@ -2549,7 +2571,13 @@
         return keys;
       }
     });
-    workspace.init('workspace-dropzone', 'workspace-palette');
+    hwZone.init('hw-zone-container');
+
+    initControlsPromotion();
+    initWaveformDrag();
+    initVoiceHwAssign();
+    initControlsCollapse();
+    serialAdapter.init();
 
     if ($voiceSelect) {
       $voiceSelect.addEventListener("change", onVoiceChange);
