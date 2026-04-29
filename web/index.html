@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Pico 2 Synth Workshop — Web Configurator</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="workspace.css">
 </head>
 <body>
 
@@ -270,10 +271,22 @@
       <p class="keyboard-hint">Play: A S D F G H J K L ; ' &nbsp;|&nbsp; Octave: Z / X</p>
     </div>
 
-    <!-- ===== 6. Parameter Panel ===== -->
+    <!-- ===== 6. Workspace: Parameter Palette + Drop Zone ===== -->
     <section class="step-card" id="param-section">
-      <h2>Parameters</h2>
-      <div id="param-panel"></div>
+      <h2>Synth Builder</h2>
+      <p class="workspace-instructions">Drag parameters or keys into the workspace to make them hardware-adjustable. Unchecked parameters stay hard-set at their knob value.</p>
+      <div class="workspace-layout">
+        <div class="workspace-palette" id="workspace-palette">
+          <h3 class="palette-section-title">Parameters</h3>
+          <div id="param-palette"></div>
+          <h3 class="palette-section-title" style="margin-top:16px">Keyboard</h3>
+          <div id="key-palette"></div>
+        </div>
+        <div class="workspace-dropzone" id="workspace-dropzone">
+          <div class="workspace-dropzone-header">&#9881; Active Hardware</div>
+        </div>
+      </div>
+      <div id="param-panel" style="display:none"></div>
     </section>
 
     <!-- ===== 7. Continuous Inputs ===== -->
@@ -524,6 +537,10 @@
 
   <!-- ===== 12. Scripts ===== -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="pureknob.js"></script>
+  <script src="circular-pot.js"></script>
+  <script src="component-icons.js"></script>
+  <script src="drag-drop.js"></script>
   <script src="synth-engine.js"></script>
   <script src="voices/eighties-dystopia.js"></script>
   <script src="voices/tiny-lfo-song.js"></script>

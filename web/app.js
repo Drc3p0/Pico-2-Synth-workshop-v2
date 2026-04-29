@@ -186,16 +186,18 @@
      loopEnabled: false,
      // Assignable GPIO map: { fieldId: { type: "button"|"pot"|"touch"|"none", gpio: "GP0" } }
      assignMap: {},
-     // Pot tracking: [{ id: "a", gpio: "GP26", el: domElement, slider: domElement, output: domElement }, ...]
-     pots: []
+     pots: [],
+     workspaceState: { params: {}, keys: {} }
    };
 
   var browserVoice = null;
   var audioInitDone = false;
   var latchedNotes = new Set();
-  var activeKeys = {};           // { keyIndex: true } for currently held keys (keyboard/mouse)
-  var heldKeyboardKeys = {};     // track physical keyboard keys to prevent repeat
+  var activeKeys = {};
+  var heldKeyboardKeys = {};
   var animFrameId = null;
+  var workspace = null;
+  var palettePots = {};
 
   // Arpeggiator runtime
   var arpIntervalId = null;
@@ -1215,215 +1217,153 @@
 
   function renderParamPanel() {
     var def = VOICES[state.selectedVoice];
-    if (!def || !$paramPanel) return;
+    if (!def) return;
 
-    $paramPanel.innerHTML = "";
+    var paletteEl = document.getElementById('param-palette');
+    if (!paletteEl) return;
+
+    paletteEl.innerHTML = '';
+    palettePots = {};
     var params = def.params;
 
     for (var pName in params) {
       if (!params.hasOwnProperty(pName)) continue;
       var p = params[pName];
 
-      var row = document.createElement("div");
-      row.className = "param-row";
-      row.setAttribute("data-param", pName);
+      var row = document.createElement('div');
+      row.className = 'palette-param-row';
+      row.setAttribute('draggable', 'true');
+      row.setAttribute('data-param', pName);
 
-      if (p.type === "continuous") {
-        renderContinuousParam(row, pName, p);
-      } else if (p.type === "trigger") {
-        renderTriggerParam(row, pName, p);
+      var cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.className = 'palette-param-checkbox';
+      cb.id = 'ws-check-' + pName;
+      cb.title = 'Check to make adjustable';
+
+      (function (paramName) {
+        cb.addEventListener('change', function () {
+          if (cb.checked) {
+            if (workspace) workspace.addParamCard(paramName);
+          } else {
+            if (workspace) workspace.removeParamCard(paramName);
+          }
+        });
+      })(pName);
+
+      var info = document.createElement('div');
+      info.className = 'palette-param-info';
+      var nameEl = document.createElement('div');
+      nameEl.className = 'palette-param-name';
+      nameEl.textContent = p.label;
+      info.appendChild(nameEl);
+
+      if (p.type === 'continuous') {
+        var rangeEl = document.createElement('div');
+        rangeEl.className = 'palette-param-range';
+        rangeEl.textContent = displayNum(p.min) + ' \u2013 ' + displayNum(p.max);
+        info.appendChild(rangeEl);
       }
 
-      $paramPanel.appendChild(row);
-    }
-  }
+      row.appendChild(cb);
 
-  function renderContinuousParam(row, pName, p) {
-    // Label
-    var labelDiv = document.createElement("div");
-    labelDiv.className = "param-label";
-    labelDiv.textContent = p.label;
-    var hint = document.createElement("span");
-    hint.className = "param-hint";
-    hint.textContent = displayNum(p.min) + " \u2014 " + displayNum(p.max);
-    labelDiv.appendChild(hint);
-
-    // Slider
-    var slider = document.createElement("input");
-    slider.type = "range";
-    slider.min = p.min;
-    slider.max = p.max;
-    slider.step = sliderStep(p.min, p.max);
-    slider.value = state.paramValues[pName] !== undefined ? state.paramValues[pName] : p.default;
-    slider.id = "param-slider-" + pName;
-
-    // Value display
-    var valueDisplay = document.createElement("span");
-    valueDisplay.className = "param-value";
-    valueDisplay.id = "param-value-" + pName;
-    valueDisplay.textContent = displayNum(parseFloat(slider.value));
-
-    // Slider event
-    slider.addEventListener("input", function () {
-      var val = parseFloat(slider.value);
-      state.paramValues[pName] = val;
-      valueDisplay.textContent = displayNum(val);
-      if (browserVoice && typeof browserVoice.setParam === "function") {
-        browserVoice.setParam(pName, val);
+      if (p.type === 'continuous') {
+        var currentVal = state.paramValues[pName] !== undefined ? state.paramValues[pName] : p.default;
+        var pot = new CircularPot({
+          name: pName,
+          label: '',
+          min: p.min,
+          max: p.max,
+          step: sliderStep(p.min, p.max),
+          value: currentVal,
+          color: CircularPot.COLOR_PURPLE,
+          size: 52,
+          onChange: function (name, val) {
+            state.paramValues[name] = val;
+            if (browserVoice && typeof browserVoice.setParam === 'function') {
+              browserVoice.setParam(name, val);
+            }
+            if (workspace) workspace.updateKnobValue(name, val);
+            scheduleCodeUpdate();
+          }
+        });
+        row.appendChild(pot.node());
+        palettePots[pName] = pot;
+      } else if (p.type === 'trigger') {
+        var trigBtn = document.createElement('button');
+        trigBtn.type = 'button';
+        trigBtn.className = 'btn btn-sm';
+        trigBtn.textContent = p.label;
+        trigBtn.addEventListener('click', function () {
+          ensureAudioInit().then(function () {
+            if (browserVoice && typeof browserVoice.setParam === 'function') {
+              browserVoice.setParam(pName, 1);
+            }
+          });
+        });
+        row.appendChild(trigBtn);
       }
-      scheduleCodeUpdate();
-    });
 
-    // Input assignment fields (type + GPIO)
-    var assignFields = createInputAssignFields(pName, "continuous");
+      row.appendChild(info);
 
-    row.appendChild(labelDiv);
-    row.appendChild(slider);
-    row.appendChild(valueDisplay);
-    row.appendChild(assignFields);
-  }
+      var handle = document.createElement('span');
+      handle.className = 'palette-drag-handle';
+      handle.textContent = '\u2261';
+      row.appendChild(handle);
 
-  function renderTriggerParam(row, pName, p) {
-    // Label
-    var labelDiv = document.createElement("div");
-    labelDiv.className = "param-label";
-    labelDiv.textContent = p.label;
-
-    // Button
-    var btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "btn btn-sm";
-    btn.textContent = p.label;
-
-    btn.addEventListener("click", function () {
-      ensureAudioInit().then(function () {
-        if (browserVoice && typeof browserVoice.setParam === "function") {
-          browserVoice.setParam(pName, 1);
-        }
+      row.addEventListener('dragstart', function (e) {
+        var paramName = this.getAttribute('data-param');
+        e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'param', name: paramName }));
+        e.dataTransfer.effectAllowed = 'move';
+        this.classList.add('dragging');
       });
-    });
 
-    // Spacer for grid alignment
-    var spacer = document.createElement("span");
+      row.addEventListener('dragend', function () {
+        this.classList.remove('dragging');
+      });
 
-    // Input assignment fields (type + GPIO) - triggers only allow Button/MPR121
-    var assignFields = createInputAssignFields(pName, "trigger");
+      paletteEl.appendChild(row);
+    }
 
-    row.appendChild(labelDiv);
-    row.appendChild(btn);
-    row.appendChild(spacer);
-    row.appendChild(assignFields);
+    renderKeyPalette();
   }
 
-  function createInputAssignFields(pName, paramType) {
-    var wrapper = document.createElement("div");
-    wrapper.className = "input-assign-wrapper";
-    wrapper.id = "assign-wrapper-" + pName;
+  function renderKeyPalette() {
+    var keyPaletteEl = document.getElementById('key-palette');
+    if (!keyPaletteEl) return;
+    keyPaletteEl.innerHTML = '';
 
-    // Type dropdown (input type: POT, LDR, Button, MPR121, Accel, Not assigned)
-    var typeSelect = document.createElement("select");
-    typeSelect.className = "input-assign-type";
-    typeSelect.id = "assign-type-" + pName;
-
-    var typeOptions = [];
-    typeOptions.push({ value: "", label: "Not assigned" });
-    typeOptions.push({ value: "POT", label: "POT" });
-    typeOptions.push({ value: "LDR", label: "LDR" });
-    if (paramType === "continuous") {
-      typeOptions.push({ value: "Button", label: "Button" });
-    }
-    typeOptions.push({ value: "MPR121", label: "MPR121" });
-    if (paramType === "continuous") {
-      typeOptions.push({ value: "Accel", label: "Accel" });
-    }
-
-    for (var i = 0; i < typeOptions.length; i++) {
-      var opt = document.createElement("option");
-      opt.value = typeOptions[i].value;
-      opt.textContent = typeOptions[i].label;
-      typeSelect.appendChild(opt);
-    }
-
-    // GPIO pin dropdown (content changes based on type)
-    var gpioSelect = document.createElement("select");
-    gpioSelect.className = "input-assign-gpio";
-    gpioSelect.id = "assign-gpio-" + pName;
-    gpioSelect.style.display = "none";
-
-    // Set initial values from state if available
-    var currentAssignment = state.inputMap[pName];
-    if (currentAssignment && typeof currentAssignment === "object") {
-      typeSelect.value = currentAssignment.type || "";
-      populateGpioForType(gpioSelect, currentAssignment.type);
-      if (currentAssignment.gpio) {
-        gpioSelect.value = currentAssignment.gpio;
-      }
-      if (currentAssignment.type) {
-        gpioSelect.style.display = "";
-      }
-    }
-
-    // Type change handler
-    typeSelect.addEventListener("change", function () {
-      var selectedType = typeSelect.value;
-      populateGpioForType(gpioSelect, selectedType);
-      updateInputAssignment(pName, selectedType, gpioSelect.value);
-      scheduleCodeUpdate();
-      updatePinout();
+    var allKeysBtn = document.createElement('div');
+    allKeysBtn.className = 'palette-drag-all-keys';
+    allKeysBtn.setAttribute('draggable', 'true');
+    allKeysBtn.textContent = '\u266b Drag All Keys (Scale)';
+    allKeysBtn.addEventListener('dragstart', function (e) {
+      e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'all-keys' }));
+      e.dataTransfer.effectAllowed = 'move';
     });
+    keyPaletteEl.appendChild(allKeysBtn);
 
-    // GPIO change handler
-    gpioSelect.addEventListener("change", function () {
-      updateInputAssignment(pName, typeSelect.value, gpioSelect.value);
-      scheduleCodeUpdate();
-      updatePinout();
-    });
+    var keysRow = document.createElement('div');
+    keysRow.className = 'palette-keys-row';
 
-    wrapper.appendChild(typeSelect);
-    wrapper.appendChild(gpioSelect);
-    return wrapper;
-  }
+    for (var i = 0; i < 11; i++) {
+      var keyDrag = document.createElement('div');
+      keyDrag.className = 'palette-key-drag';
+      keyDrag.setAttribute('draggable', 'true');
+      keyDrag.setAttribute('data-key-index', i);
+      keyDrag.textContent = noteNameForIndex(i);
 
-  function populateGpioForType(gpioSelect, inputType) {
-    if (!gpioSelect) return;
-    gpioSelect.innerHTML = "";
+      (function (idx) {
+        keyDrag.addEventListener('dragstart', function (e) {
+          e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'key', keyIndex: idx }));
+          e.dataTransfer.effectAllowed = 'move';
+        });
+      })(i);
 
-    var pins = [];
-    if (inputType === "POT" || inputType === "LDR") {
-      pins = ["GP26", "GP27", "GP28"];
-    } else if (inputType === "Button") {
-      pins = ["GP0", "GP1", "GP2", "GP3", "GP4", "GP5", "GP6", "GP7"];
-    } else if (inputType === "MPR121") {
-      for (var i = 0; i < 12; i++) {
-        pins.push("Touch " + i);
-      }
-    } else if (inputType === "Accel") {
-      pins = ["X", "Y"];
+      keysRow.appendChild(keyDrag);
     }
 
-    if (pins.length === 0) {
-      gpioSelect.style.display = "none";
-      return;
-    }
-
-    gpioSelect.style.display = "";
-    for (var j = 0; j < pins.length; j++) {
-      var opt = document.createElement("option");
-      opt.value = pins[j];
-      opt.textContent = pins[j];
-      gpioSelect.appendChild(opt);
-    }
-    if (pins.length > 0) {
-      gpioSelect.value = pins[0];
-    }
-  }
-
-  function updateInputAssignment(pName, inputType, gpio) {
-    if (!inputType || inputType === "") {
-      delete state.inputMap[pName];
-    } else {
-      state.inputMap[pName] = { type: inputType, gpio: gpio };
-    }
+    keyPaletteEl.appendChild(keysRow);
   }
 
   // =========================================================================
@@ -1834,14 +1774,47 @@
     lines.push('    # ---- Input Assignments ----');
     lines.push('    "input_map": {');
 
+    var wsState = state.workspaceState || { params: {}, keys: {} };
+    var wsParams = wsState.params || {};
+
+    for (var pName in wsParams) {
+      if (!wsParams.hasOwnProperty(pName)) continue;
+      var ws = wsParams[pName];
+      if (!ws.adjustable || !ws.hwType || !ws.gpio) continue;
+      var srcName = '';
+      if (ws.hwType === 'pot') srcName = 'pot_' + String.fromCharCode(97 + GPIO_POT_PINS.indexOf(ws.gpio));
+      else if (ws.hwType === 'ldr') srcName = 'ldr_' + String.fromCharCode(97 + GPIO_POT_PINS.indexOf(ws.gpio));
+      else if (ws.hwType === 'button') srcName = 'button_' + ws.gpio.replace('GP', '');
+      else if (ws.hwType === 'touch_native') srcName = 'touch_native_' + ws.gpio.replace('GP', '');
+      else if (ws.hwType === 'touch_mpr121') srcName = 'mpr121_' + ws.gpio;
+      else if (ws.hwType === 'accel') srcName = 'accel_' + ws.gpio.toLowerCase();
+      if (srcName) {
+        lines.push('        "' + pName + '": {"type": "' + ws.hwType + '", "gpio": "' + ws.gpio + '", "source": "' + srcName + '"},');
+      }
+    }
+
     var mapKeys = Object.keys(state.inputMap);
     for (var m = 0; m < mapKeys.length; m++) {
       var mKey = mapKeys[m];
+      if (wsParams[mKey]) continue;
       var mVal = state.inputMap[mKey];
       if (!mVal || typeof mVal !== "object") continue;
       lines.push('        "' + mKey + '": {"type": "' + mVal.type + '", "gpio": "' + (mVal.gpio || "") + '"},');
     }
 
+    lines.push("    },");
+    lines.push("");
+
+    var wsKeys = wsState.keys || {};
+    lines.push('    # ---- Key Mapping ----');
+    lines.push('    "key_map": {');
+    for (var kId in wsKeys) {
+      if (!wsKeys.hasOwnProperty(kId)) continue;
+      var kc = wsKeys[kId];
+      if (!kc.hwType) continue;
+      var gpioList = Object.keys(kc.gpioAssignments || {});
+      lines.push('        "' + kId + '": {"type": "' + kc.hwType + '", "sweep": ' + (kc.sweepMode ? 'True' : 'False') + ', "gpio": ' + JSON.stringify(gpioList) + '},');
+    }
     lines.push("    },");
     lines.push("");
 
@@ -1858,13 +1831,15 @@
     lines.push("");
 
     // Parameter defaults
-    lines.push("    # ---- Voice Parameters (defaults) ----");
+    lines.push("    # ---- Voice Parameters ----");
     for (var pName in def.params) {
       if (!def.params.hasOwnProperty(pName)) continue;
       var p = def.params[pName];
       if (p.type === "continuous") {
         var val = state.paramValues[pName] !== undefined ? state.paramValues[pName] : p.default;
-        lines.push("    # " + pName + ": " + displayNum(val) + "  (range: " + displayNum(p.min) + " - " + displayNum(p.max) + ")");
+        var isAdjustable = wsParams[pName] && wsParams[pName].adjustable;
+        var marker = isAdjustable ? "(adjustable via " + (wsParams[pName].hwType || "?") + ")" : "(hard-set)";
+        lines.push('    "' + pName + '": ' + displayNum(val) + ',  # ' + marker + ' range: ' + displayNum(p.min) + ' - ' + displayNum(p.max));
       }
     }
     lines.push("");
@@ -2175,7 +2150,8 @@
       audio: {
         sample_rate: 28000,
         audio_pin: "GP15"
-      }
+      },
+      workspace: state.workspaceState || { params: {}, keys: {} }
     };
 
     for (var k in state.inputMap) {
@@ -2506,7 +2482,8 @@
     // Initialize param values
     initParamValues(voiceKey);
 
-    // Rebuild parameter panel
+    if (workspace) workspace.clear();
+
     renderParamPanel();
 
     // Create new browser voice (don't auto-play)
@@ -2543,7 +2520,37 @@
     // Render parameter panel
     renderParamPanel();
 
-    // Wire up voice selector
+    workspace = new WorkspaceManager({
+      onStateChange: function (wsState) {
+        state.workspaceState = wsState;
+        updatePinout();
+        scheduleCodeUpdate();
+      },
+      getVoiceParams: function () {
+        var def = VOICES[state.selectedVoice];
+        return def ? def.params : {};
+      },
+      getParamValue: function (name) {
+        return state.paramValues[name];
+      },
+      setParamValue: function (name, val) {
+        state.paramValues[name] = val;
+        if (palettePots[name]) palettePots[name].setValue(val);
+        if (browserVoice && typeof browserVoice.setParam === 'function') {
+          browserVoice.setParam(name, val);
+        }
+        scheduleCodeUpdate();
+      },
+      getScaleKeys: function () {
+        var keys = [];
+        for (var i = 0; i < 11; i++) {
+          keys.push({ index: i, label: noteNameForIndex(i) });
+        }
+        return keys;
+      }
+    });
+    workspace.init('workspace-dropzone', 'workspace-palette');
+
     if ($voiceSelect) {
       $voiceSelect.addEventListener("change", onVoiceChange);
     }

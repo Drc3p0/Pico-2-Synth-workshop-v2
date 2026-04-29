@@ -1,0 +1,415 @@
+/* workspace.css - Drag-drop workspace, circular pots, dark mode purple/teal */
+
+:root {
+  --ws-purple: #8B5CF6;
+  --ws-purple-dim: #6D40D9;
+  --ws-purple-glow: rgba(139, 92, 246, 0.15);
+  --ws-teal: #14B8A6;
+  --ws-teal-dim: #0D9488;
+  --ws-teal-glow: rgba(20, 184, 166, 0.15);
+  --ws-bg-dark: #0f0f1a;
+  --ws-bg-card: #1a1a2e;
+  --ws-bg-card-hover: #1f1f38;
+  --ws-border: #2a2a4a;
+  --ws-text: #e2e8f0;
+  --ws-text-dim: #94a3b8;
+  --ws-danger: #ef4444;
+}
+
+/* ===================== Layout: Palette + Workspace ===================== */
+
+.workspace-layout {
+  display: flex;
+  gap: 0;
+  position: relative;
+  min-height: 400px;
+}
+
+.workspace-palette {
+  flex: 1;
+  min-width: 300px;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+.workspace-splitter {
+  width: 6px;
+  cursor: col-resize;
+  background: var(--ws-border);
+  border-radius: 3px;
+  flex-shrink: 0;
+  transition: background 0.15s;
+  position: relative;
+  z-index: 5;
+}
+
+.workspace-splitter:hover,
+.workspace-splitter:active {
+  background: var(--ws-purple);
+}
+
+.workspace-dropzone {
+  width: 380px;
+  min-width: 250px;
+  max-width: 800px;
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+  max-height: 100vh;
+  overflow-y: auto;
+  background: var(--ws-bg-dark);
+  border: 2px dashed var(--ws-border);
+  border-radius: 12px;
+  padding: 12px;
+  transition: border-color 0.2s, background 0.2s;
+  z-index: 10;
+}
+
+.workspace-dropzone.workspace-dragover {
+  border-color: var(--ws-teal);
+  background: var(--ws-teal-glow);
+}
+
+.workspace-dropzone::-webkit-scrollbar {
+  width: 6px;
+}
+
+.workspace-dropzone::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.workspace-dropzone::-webkit-scrollbar-thumb {
+  background: var(--ws-border);
+  border-radius: 3px;
+}
+
+/* ===================== Workspace Header ===================== */
+
+.workspace-dropzone-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 4px 12px 4px;
+  border-bottom: 1px solid var(--ws-border);
+  margin-bottom: 12px;
+  font-size: 0.85rem;
+  color: var(--ws-teal);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ===================== Empty State ===================== */
+
+.workspace-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 16px;
+  color: var(--ws-text-dim);
+  text-align: center;
+}
+
+.workspace-empty-icon {
+  font-size: 2.5rem;
+  margin-bottom: 12px;
+  opacity: 0.4;
+}
+
+.workspace-empty p {
+  font-size: 0.85rem;
+  max-width: 200px;
+  line-height: 1.4;
+}
+
+/* ===================== Workspace Cards ===================== */
+
+.workspace-card {
+  background: var(--ws-bg-card);
+  border: 1px solid var(--ws-border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.workspace-card:hover {
+  border-color: var(--ws-purple-dim);
+  box-shadow: 0 0 12px var(--ws-purple-glow);
+}
+
+.workspace-card--keys {
+  border-left: 3px solid var(--ws-teal);
+}
+
+.workspace-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.workspace-card-icon {
+  color: var(--ws-teal);
+  flex-shrink: 0;
+}
+
+.workspace-card-title {
+  flex: 1;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ws-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.workspace-card-remove {
+  background: none;
+  border: none;
+  color: var(--ws-text-dim);
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+  border-radius: 4px;
+  transition: color 0.15s, background 0.15s;
+}
+
+.workspace-card-remove:hover {
+  color: var(--ws-danger);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+/* ===================== Hardware Selectors ===================== */
+
+.workspace-card-hw {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.workspace-card-hw label {
+  font-size: 0.75rem;
+  color: var(--ws-text-dim);
+  flex-shrink: 0;
+}
+
+.workspace-hw-select,
+.workspace-gpio-select {
+  background: var(--ws-bg-dark);
+  border: 1px solid var(--ws-border);
+  color: var(--ws-text);
+  border-radius: 4px;
+  padding: 3px 6px;
+  font-size: 0.75rem;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.workspace-hw-select:focus,
+.workspace-gpio-select:focus {
+  border-color: var(--ws-purple);
+}
+
+.workspace-gpio-select--sm {
+  max-width: 100px;
+}
+
+/* ===================== Key Config Area ===================== */
+
+.workspace-card-config {
+  margin-top: 6px;
+}
+
+.workspace-card-gpio-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.workspace-key-label {
+  font-size: 0.7rem;
+  color: var(--ws-text-dim);
+  min-width: 50px;
+}
+
+.workspace-card-note {
+  font-size: 0.7rem;
+  color: var(--ws-teal-dim);
+  font-style: italic;
+  margin: 4px 0 8px 0;
+  line-height: 1.3;
+}
+
+/* ===================== Knob in Card ===================== */
+
+.workspace-card-knob {
+  display: flex;
+  justify-content: center;
+  padding: 4px 0;
+}
+
+/* ===================== Circular Pot ===================== */
+
+.circular-pot {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+}
+
+/* ===================== Palette Param Row ===================== */
+
+.palette-param-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--ws-bg-card);
+  border: 1px solid var(--ws-border);
+  border-radius: 8px;
+  margin-bottom: 6px;
+  cursor: grab;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  user-select: none;
+}
+
+.palette-param-row:hover {
+  border-color: var(--ws-purple-dim);
+  box-shadow: 0 0 8px var(--ws-purple-glow);
+}
+
+.palette-param-row.dragging {
+  opacity: 0.5;
+}
+
+.palette-param-row.in-workspace {
+  border-color: var(--ws-teal-dim);
+  background: var(--ws-teal-glow);
+}
+
+.palette-param-checkbox {
+  accent-color: var(--ws-teal);
+  flex-shrink: 0;
+}
+
+.palette-param-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.palette-param-name {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--ws-text);
+}
+
+.palette-param-range {
+  font-size: 0.65rem;
+  color: var(--ws-text-dim);
+}
+
+.palette-drag-handle {
+  color: var(--ws-text-dim);
+  font-size: 1rem;
+  flex-shrink: 0;
+  opacity: 0.4;
+  transition: opacity 0.15s;
+}
+
+.palette-param-row:hover .palette-drag-handle {
+  opacity: 1;
+  color: var(--ws-purple);
+}
+
+/* ===================== Key Drag Items ===================== */
+
+.palette-key-drag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: var(--ws-bg-card);
+  border: 1px solid var(--ws-border);
+  border-radius: 6px;
+  cursor: grab;
+  font-size: 0.75rem;
+  color: var(--ws-text);
+  transition: border-color 0.15s;
+  user-select: none;
+}
+
+.palette-key-drag:hover {
+  border-color: var(--ws-teal);
+}
+
+.palette-keys-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 8px 0;
+}
+
+.palette-drag-all-keys {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--ws-teal-glow);
+  border: 1px dashed var(--ws-teal-dim);
+  border-radius: 6px;
+  cursor: grab;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ws-teal);
+  transition: background 0.15s;
+  user-select: none;
+}
+
+.palette-drag-all-keys:hover {
+  background: rgba(20, 184, 166, 0.25);
+}
+
+/* ===================== Responsive ===================== */
+
+@media (max-width: 768px) {
+  .workspace-layout {
+    flex-direction: column;
+  }
+
+  .workspace-dropzone {
+    position: sticky;
+    top: 0;
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    max-height: 40vh;
+    order: -1;
+    border-radius: 0 0 12px 12px;
+  }
+
+  .workspace-splitter {
+    display: none;
+  }
+
+  .workspace-palette {
+    padding-right: 0;
+    min-width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .workspace-dropzone {
+    max-height: 35vh;
+    padding: 8px;
+  }
+
+  .workspace-card {
+    padding: 8px;
+  }
+}
