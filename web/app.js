@@ -2528,7 +2528,33 @@
 
     for (var id in hwZone.items) {
       var item = hwZone.items[id];
-      if (!item.hwType || !item.gpio) continue;
+      if (!item.hwType) continue;
+
+      // Accelerometer is I2C, no GPIO — handle separately
+      if (item.hwType === "accel") {
+        if (data.accel && Array.isArray(data.accel) && data.accel.length >= 2) {
+          var params2 = hwZone.getVoiceParams();
+          var def2 = params2[item.paramName] || {};
+          var aMin = def2.min !== undefined ? def2.min : 0;
+          var aMax = def2.max !== undefined ? def2.max : 1023;
+          var xNorm = (data.accel[0] + 1.0) / 2.0;
+          var yNorm = (data.accel[1] + 1.0) / 2.0;
+          var mappedX = aMin + xNorm * (aMax - aMin);
+          if (item._potX) item._potX.setValue(mappedX);
+          if (item._potY) {
+            var mappedY = aMin + yNorm * (aMax - aMin);
+            item._potY.setValue(mappedY);
+          }
+          if (item._pot) item._pot.setValue(mappedX);
+          if (item.paramName) {
+            hwZone.setParamValue(item.paramName, mappedX);
+            bus.publish("param:" + item.paramName, mappedX);
+          }
+        }
+        continue;
+      }
+
+      if (!item.gpio) continue;
 
       var gpio = Array.isArray(item.gpio) ? item.gpio : [item.gpio];
 
@@ -2539,47 +2565,59 @@
 
         if (item.hwType === "button") {
           if (data.btn && Array.isArray(data.btn)) {
-            var btnEl = item.el ? item.el.querySelector(".hw-visual-button") : null;
-            for (var bi = 0; bi < data.btn.length; bi++) {
-              if (bi === gi) {
-                var pressed = data.btn[bi] === 1;
-                if (btnEl) {
-                  if (pressed) btnEl.classList.add("hw-btn-pressed");
-                  else btnEl.classList.remove("hw-btn-pressed");
+            // Match by pin number: btn[0]=GP0, btn[1]=GP1, etc.
+            var btnIdx = pinNum;
+            if (btnIdx >= 0 && btnIdx < data.btn.length) {
+              var pressed = data.btn[btnIdx] === 1;
+              var btnEl = item.el ? item.el.querySelector(".hw-visual-button") : null;
+              if (btnEl) {
+                if (pressed) btnEl.classList.add("hw-btn-pressed");
+                else btnEl.classList.remove("hw-btn-pressed");
+              }
+              if (item.kind === "key" || item.kind === "keys") {
+                var devKey = "_devPressed_" + gi;
+                if (pressed && !item[devKey]) {
+                  handleKeyPress(gi);
+                  item[devKey] = true;
+                } else if (!pressed && item[devKey]) {
+                  handleKeyRelease(gi);
+                  item[devKey] = false;
                 }
-                if (item.kind === "key" || item.kind === "keys") {
-                  if (pressed && !item._devPressed) {
-                    handleKeyPress(gi);
-                    item._devPressed = true;
-                  } else if (!pressed && item._devPressed) {
-                    handleKeyRelease(gi);
-                    item._devPressed = false;
-                  }
-                }
-                break;
               }
             }
           }
         } else if (item.hwType === "touch_native") {
           if (data.touch_gpio && Array.isArray(data.touch_gpio)) {
-            var tEl = item.el ? item.el.querySelector(".hw-visual-touch") : null;
-            for (var ti = 0; ti < data.touch_gpio.length; ti++) {
-              if (ti === gi) {
-                var tActive = data.touch_gpio[ti] === 1;
-                if (tEl) {
-                  if (tActive) tEl.classList.add("hw-touch-active");
-                  else tEl.classList.remove("hw-touch-active");
+            // touch_gpio array is ordered by touch_pins in config
+            // Build ordered list from zone items to find index
+            var touchPins = [];
+            for (var zid in hwZone.items) {
+              var zi = hwZone.items[zid];
+              if (zi.hwType === "touch_native" && zi.gpio) {
+                var zGpios = Array.isArray(zi.gpio) ? zi.gpio : [zi.gpio];
+                for (var zg = 0; zg < zGpios.length; zg++) {
+                  if (zGpios[zg] && touchPins.indexOf(zGpios[zg]) === -1)
+                    touchPins.push(zGpios[zg]);
                 }
-                if (item.kind === "key" || item.kind === "keys") {
-                  if (tActive && !item._devPressed) {
-                    handleKeyPress(gi);
-                    item._devPressed = true;
-                  } else if (!tActive && item._devPressed) {
-                    handleKeyRelease(gi);
-                    item._devPressed = false;
-                  }
+              }
+            }
+            var tIdx = touchPins.indexOf(pin);
+            if (tIdx >= 0 && tIdx < data.touch_gpio.length) {
+              var tActive = data.touch_gpio[tIdx] === 1;
+              var tEl = item.el ? item.el.querySelector(".hw-visual-touch") : null;
+              if (tEl) {
+                if (tActive) tEl.classList.add("hw-touch-active");
+                else tEl.classList.remove("hw-touch-active");
+              }
+              if (item.kind === "key" || item.kind === "keys") {
+                var devKeyT = "_devPressed_" + gi;
+                if (tActive && !item[devKeyT]) {
+                  handleKeyPress(gi);
+                  item[devKeyT] = true;
+                } else if (!tActive && item[devKeyT]) {
+                  handleKeyRelease(gi);
+                  item[devKeyT] = false;
                 }
-                break;
               }
             }
           }
@@ -2612,23 +2650,7 @@
               }
             }
           }
-        } else if (item.hwType === "accel") {
-          if (data.accel && Array.isArray(data.accel) && data.accel.length >= 2) {
-            var params2 = hwZone.getVoiceParams();
-            var def2 = params2[item.paramName] || {};
-            var aMin = def2.min !== undefined ? def2.min : 0;
-            var aMax = def2.max !== undefined ? def2.max : 1023;
-            var xNorm = (data.accel[0] + 1.0) / 2.0;
-            var mappedX = aMin + xNorm * (aMax - aMin);
-            if (item._pot) item._pot.setValue(mappedX);
-            if (item.paramName) {
-              hwZone.setParamValue(item.paramName, mappedX);
-              bus.publish("param:" + item.paramName, mappedX);
-            }
-          }
         }
-
-        break;
       }
     }
   }

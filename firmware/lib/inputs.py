@@ -94,15 +94,16 @@ class ButtonManager:
         self._keys = None
         self.available = False
         self.count = len(pins) if pins else 0
+        self._states = []
 
         try:
             if keypad is None:
                 raise RuntimeError("keypad unavailable")
-            # Filter out None pins
             valid_pins = tuple(p for p in pins if p is not None)
             if not valid_pins:
                 raise RuntimeError("no valid pins")
             self.count = len(valid_pins)
+            self._states = [False] * self.count
             self._keys = keypad.Keys(
                 valid_pins,
                 value_when_pressed=value_when_pressed,
@@ -113,7 +114,6 @@ class ButtonManager:
             self._keys = None
 
     def check(self):
-        """Return list of (button_index, is_pressed) events since last check."""
         events = []
         if not self.available or self._keys is None:
             return events
@@ -123,8 +123,10 @@ class ButtonManager:
                 if event is None:
                     break
                 if getattr(event, "pressed", False):
+                    self._states[event.key_number] = True
                     events.append((event.key_number, True))
                 elif getattr(event, "released", False):
+                    self._states[event.key_number] = False
                     events.append((event.key_number, False))
         except Exception:
             return []
@@ -313,14 +315,7 @@ class InputManager:
         """Return list of 0/1 states for buttons (for monitoring)."""
         if not self.buttons or not self.buttons.available:
             return []
-        states = []
-        if self.buttons._keys:
-            for i in range(self.buttons.count):
-                try:
-                    states.append(1 if self.buttons._keys[i] else 0)
-                except Exception:
-                    states.append(0)
-        return states
+        return [1 if s else 0 for s in self.buttons._states]
 
     def get_mpr121_touched(self):
         """Return set of currently touched MPR121 channel numbers."""
