@@ -2105,10 +2105,6 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
   color: var(--primary);
 }
 
-.onboarding-content {
-  padding: 1.5rem;
-}
-
 .onboarding-content ol {
   list-style: none;
   counter-reset: onboard-step;
