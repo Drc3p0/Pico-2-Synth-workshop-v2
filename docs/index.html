@@ -32,19 +32,23 @@
         </div>
         <ol class="setup-steps">
           <li>
-            <h3>Step 1: Download Firmware (.uf2)</h3>
-            <p>Download the synth workshop UF2 firmware for your board.</p>
-            <p id="uf2-link-pico2">
-              <a href="https://circuitpython.org/board/raspberry_pi_pico2/" target="_blank" rel="noopener noreferrer">Download for Pico 2 (RP2350)</a>
-            </p>
-            <p id="uf2-link-pico" style="display:none">
-              <a href="https://circuitpython.org/board/raspberry_pi_pico/" target="_blank" rel="noopener noreferrer">Download for Pico (RP2040)</a>
-            </p>
+            <h3>Step 1: Download Bundle</h3>
+            <p>Download the all-in-one bundle (.zip) containing CircuitPython firmware and synth files.</p>
+            <p><a href="https://github.com/Drc3p0/Pico-2-Synth-workshop-v2/releases/latest" target="_blank" rel="noopener noreferrer" class="btn btn-xs" style="background:var(--ws-purple)">Download Bundle (.zip)</a></p>
           </li>
-          <li><h3>Step 2: Flash Firmware</h3><p>Hold BOOTSEL, plug in USB, drag .uf2 onto the mass storage device.</p></li>
-          <li><h3>Step 3: Copy Code</h3><p>Copy <code>code.py</code> and <code>synth-config.json</code> to the CIRCUITPY drive.</p></li>
-          <li><h3>Step 4: Install Libraries</h3><p>Copy required <code>.mpy</code> files from the <a href="https://github.com/adafruit/Adafruit_CircuitPython_Bundle/releases" target="_blank">Adafruit bundle</a> to <code>CIRCUITPY/lib/</code>.</p></li>
-          <li><h3>Step 5: Copy WAV Files (if needed)</h3><p class="note">If using WAV wavetables, also copy the <code>wav/</code> folder to your CIRCUITPY drive.</p></li>
+          <li>
+            <h3>Step 2: Flash CircuitPython</h3>
+            <p>Hold <strong>BOOTSEL</strong> on your Pico 2 while plugging in USB. Drag <code>circuitpython-pico2.uf2</code> from the bundle onto the "RPI-RP2" drive. A new "CIRCUITPY" drive appears.</p>
+          </li>
+          <li>
+            <h3>Step 3: Copy Synth Files</h3>
+            <p>Open the <code>CIRCUITPY-contents</code> folder from the bundle. Drag <strong>all files</strong> (<code>code.py</code>, <code>config.json</code>, <code>lib/</code>, <code>wav/</code>) onto the CIRCUITPY drive. The synth starts playing!</p>
+          </li>
+          <li>
+            <h3>Step 4: Configure</h3>
+            <p>Build your hardware layout above, then click <strong>Connect</strong> and <strong>Save to Device</strong>. No file copying needed after this; config is saved to flash.</p>
+            <p style="font-size:0.75rem;color:var(--ws-text-dim)">Alternative: Download <code>code.py</code> from the code panel and copy it to CIRCUITPY manually.</p>
+          </li>
         </ol>
         <div class="board-wiring-note" id="board-wiring-note">
           <h3>Wiring Note for Your Board</h3>
@@ -74,6 +78,13 @@
           <option value="falling-forever">Falling Forever</option>
           <option value="deep-note">Deep Note</option>
         </select>
+
+        <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+          <span id="serial-status" class="serial-status-dot"></span>
+          <button id="btn-connect" class="btn btn-xs" style="background:var(--ws-purple)">Connect</button>
+          <button id="btn-save-device" class="btn btn-xs" style="background:var(--ws-teal);display:none">Save to Device</button>
+        </div>
+      </div>
         <label style="font-size:0.75rem;color:var(--ws-text-dim)">
           <input type="checkbox" id="voice-hw-assign-toggle"> Assign to hardware
         </label>
@@ -89,99 +100,96 @@
       </div>
     </section>
 
-    <section class="step-card" id="hw-zone-section">
-      <h2>Active Hardware</h2>
-      <p class="workspace-instructions">Drag parameters, keys, or controls here. Freely arrange items to match your physical hardware layout.</p>
-      <div id="hw-zone-container" class="hw-zone-container"></div>
-    </section>
+    <div class="workspace-layout">
+      <section class="step-card workspace-main" id="hw-zone-section">
+        <h2>Active Hardware</h2>
+        <p class="workspace-instructions">Drag parameters, keys, or controls here. Freely arrange items to match your physical hardware layout.</p>
+        <div id="hw-zone-container" class="hw-zone-container"></div>
+      </section>
 
-    <div class="waveform-container" id="waveform-section">
-      <div class="waveform-draggable" draggable="true" id="waveform-draggable">
-        <canvas id="waveform-canvas" width="400" height="80"></canvas>
-        <div class="waveform-drag-hint">Drag into Active Hardware to assign to OLED</div>
-      </div>
-    </div>
-
-    <section class="step-card" id="controls-section">
-      <h2 class="section-title-collapsible" id="controls-collapse-toggle">
-        <span class="collapse-arrow">&#9660;</span> Controls
-        <span style="font-size:0.65rem;color:var(--ws-text-dim);margin-left:8px">(drag items into Active Hardware to promote)</span>
-      </h2>
-      <div id="controls-body">
-        <div class="control-row controls-inline">
-          <label><input type="checkbox" id="wav-toggle"> Use WAV files</label>
-          <label><input type="checkbox" id="latch-toggle"> Latch</label>
-        </div>
-
-        <div class="control-row controls-grid" id="controls-grid">
-          <div class="control-field controls-promotable" draggable="true" data-control="scale">
-            <span class="promote-handle">&#8801;</span>
-            <label for="scale-select">Scale</label>
-            <select id="scale-select">
-              <option value="chromatic">Chromatic</option>
-              <option value="pentatonic_major" selected>Pentatonic Major</option>
-              <option value="pentatonic_minor">Pentatonic Minor</option>
-              <option value="blues_major">Blues Major</option>
-              <option value="blues_minor">Blues Minor</option>
-              <option value="dorian">Dorian</option>
-              <option value="mixolydian">Mixolydian</option>
-              <option value="harmonic_minor">Harmonic Minor</option>
-            </select>
-          </div>
-
-          <div class="control-field controls-promotable" draggable="true" data-control="tonality">
-            <span class="promote-handle">&#8801;</span>
-            <label>Major / Minor</label>
-            <button id="btn-tonality" class="btn btn-sm btn-toggle">Major</button>
-          </div>
-
-          <div class="control-field controls-promotable" draggable="true" data-control="arp">
-            <span class="promote-handle">&#8801;</span>
-            <label><input type="checkbox" id="arp-toggle"> Arpeggiator</label>
-          </div>
-
-          <div class="control-field controls-promotable" draggable="true" data-control="arp_pattern" id="arp-pattern-field">
-            <span class="promote-handle">&#8801;</span>
-            <label for="arp-pattern">Arp Pattern</label>
-            <select id="arp-pattern">
-              <option value="up">Up</option>
-              <option value="down">Down</option>
-              <option value="updown">Up-Down</option>
-              <option value="random">Random</option>
-            </select>
-          </div>
-
-          <div class="control-field controls-promotable" draggable="true" data-control="arp_speed" id="arp-speed-field">
-            <span class="promote-handle">&#8801;</span>
-            <label for="arp-speed">Arp Speed <span id="arp-speed-val">120</span> BPM</label>
-            <input type="range" id="arp-speed" min="40" max="300" value="120">
-          </div>
-
-          <div class="control-field controls-promotable" draggable="true" data-control="loop">
-            <span class="promote-handle">&#8801;</span>
-            <label><input type="checkbox" id="loop-toggle"> Loop Record</label>
-          </div>
-
-          <div class="control-field">
-            <div class="oct-control">
-              <button id="octave-down" class="btn btn-sm">&#9664; Oct -</button>
-              <span id="octave-display">Octave 3</span>
-              <button id="octave-up" class="btn btn-sm">Oct + &#9654;</button>
+      <aside class="workspace-sidebar">
+        <div class="builder-col builder-col--controls">
+          <h3 class="builder-col-title section-title-collapsible" id="controls-collapse-toggle">
+            <span class="collapse-arrow">&#9660;</span> Controls
+          </h3>
+          <div id="controls-body">
+            <div class="controls-compact">
+              <div class="controls-promotable" draggable="true" data-control="latch">
+                <span class="promote-handle">&#8801;</span>
+                <label class="ctrl-inline"><input type="checkbox" id="latch-toggle"> Latch</label>
+              </div>
+              <div class="controls-promotable" draggable="true" data-control="arp">
+                <span class="promote-handle">&#8801;</span>
+                <label class="ctrl-inline"><input type="checkbox" id="arp-toggle"> Arp</label>
+              </div>
+              <div class="controls-promotable" draggable="true" data-control="loop">
+                <span class="promote-handle">&#8801;</span>
+                <label class="ctrl-inline"><input type="checkbox" id="loop-toggle"> Loop</label>
+              </div>
+            </div>
+            <div class="controls-compact">
+              <div class="controls-promotable" draggable="true" data-control="scale">
+                <span class="promote-handle">&#8801;</span>
+                <select id="scale-select" class="ctrl-select">
+                  <option value="chromatic">Chromatic</option>
+                  <option value="pentatonic_major" selected>Pentatonic Maj</option>
+                  <option value="pentatonic_minor">Pentatonic Min</option>
+                  <option value="blues_major">Blues Maj</option>
+                  <option value="blues_minor">Blues Min</option>
+                  <option value="dorian">Dorian</option>
+                  <option value="mixolydian">Mixolydian</option>
+                  <option value="harmonic_minor">Harmonic Min</option>
+                </select>
+              </div>
+              <div class="controls-promotable" draggable="true" data-control="tonality">
+                <span class="promote-handle">&#8801;</span>
+                <button id="btn-tonality" class="btn btn-xs btn-toggle">Major</button>
+              </div>
+            </div>
+            <div class="controls-compact">
+              <div class="controls-promotable" draggable="true" data-control="arp_pattern" id="arp-pattern-field">
+                <span class="promote-handle">&#8801;</span>
+                <select id="arp-pattern" class="ctrl-select">
+                  <option value="up">Up</option>
+                  <option value="down">Down</option>
+                  <option value="updown">Up-Down</option>
+                  <option value="random">Random</option>
+                </select>
+              </div>
+              <div class="controls-promotable" draggable="true" data-control="arp_speed" id="arp-speed-field">
+                <span class="promote-handle">&#8801;</span>
+                <label class="ctrl-label">BPM <span id="arp-speed-val">120</span></label>
+                <input type="range" id="arp-speed" min="40" max="300" value="120" class="ctrl-range">
+              </div>
+            </div>
+            <div class="controls-compact">
+              <button id="octave-down" class="btn btn-xs">&#9664;</button>
+              <span id="octave-display" class="ctrl-label">Oct 3</span>
+              <button id="octave-up" class="btn btn-xs">&#9654;</button>
             </div>
           </div>
         </div>
-      </div>
-    </section>
 
-    <section class="step-card" id="param-section">
-      <h2>Parameter Palette</h2>
-      <p class="workspace-instructions">Drag parameters or keys into Active Hardware above. Unchecked parameters stay hard-set at their knob value.</p>
-      <div id="param-palette"></div>
-      <h3 class="palette-section-title" style="margin-top:16px">Keyboard</h3>
-      <div id="key-palette"></div>
-      <p class="keyboard-hint">Play: A S D F G H J K L ; ' &nbsp;|&nbsp; Octave: Z / X</p>
-      <div class="keyboard" id="keyboard" style="display:none"></div>
-    </section>
+        <div class="builder-col builder-col--params">
+          <h3 class="builder-col-title">Parameters</h3>
+          <div id="param-palette"></div>
+        </div>
+
+        <div class="builder-col builder-col--keys">
+          <h3 class="builder-col-title">Keyboard / Display</h3>
+          <div id="key-palette"></div>
+          <p class="keyboard-hint" style="font-size:0.6rem;margin-top:6px">Keys: A S D F G H J K L ; ' | Oct: Z/X</p>
+          <div class="keyboard" id="keyboard" style="display:none"></div>
+        </div>
+
+        <div class="waveform-container" id="waveform-section">
+          <div class="waveform-draggable" draggable="true" id="waveform-draggable">
+            <canvas id="waveform-canvas" width="260" height="60"></canvas>
+            <div class="waveform-drag-hint">Drag into Active Hardware to assign to OLED</div>
+          </div>
+        </div>
+      </aside>
+    </div>
 
     <details class="expandable">
       <summary>Pinout Diagram</summary>
