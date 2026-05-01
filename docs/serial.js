@@ -214,7 +214,74 @@
     }
   }
 
-  // ---------- expose ----------
+  function sendCommand(cmdObj) {
+    return send(JSON.stringify(cmdObj) + "\n");
+  }
+
+  var pendingCallbacks = {};
+
+  function onResponse(respType, callback) {
+    if (!pendingCallbacks[respType]) pendingCallbacks[respType] = [];
+    pendingCallbacks[respType].push(callback);
+  }
+
+  function _routeResponse(data) {
+    if (data.resp && pendingCallbacks[data.resp]) {
+      var cbs = pendingCallbacks[data.resp];
+      pendingCallbacks[data.resp] = [];
+      cbs.forEach(function (cb) { cb(data); });
+    }
+  }
+
+  var origNotifyData = notifyData;
+  notifyData = function (parsed) {
+    if (parsed && parsed.resp) {
+      _routeResponse(parsed);
+    }
+    origNotifyData(parsed);
+  };
+
+  function ping() {
+    return new Promise(function (resolve) {
+      onResponse("pong", function (d) { resolve(d); });
+      sendCommand({ cmd: "ping" });
+      setTimeout(function () { resolve(null); }, 3000);
+    });
+  }
+
+  function getConfig() {
+    return new Promise(function (resolve) {
+      onResponse("config", function (d) { resolve(d.data || null); });
+      sendCommand({ cmd: "get_config" });
+      setTimeout(function () { resolve(null); }, 5000);
+    });
+  }
+
+  function putConfig(config) {
+    return new Promise(function (resolve) {
+      onResponse("ok", function () { resolve(true); });
+      onResponse("error", function (d) { resolve(false); });
+      sendCommand({ cmd: "put_config", data: config });
+      setTimeout(function () { resolve(false); }, 5000);
+    });
+  }
+
+  function saveToFlash() {
+    return new Promise(function (resolve) {
+      onResponse("saved", function () { resolve(true); });
+      onResponse("error", function () { resolve(false); });
+      sendCommand({ cmd: "save" });
+      setTimeout(function () { resolve(false); }, 5000);
+    });
+  }
+
+  function resetDevice() {
+    return new Promise(function (resolve) {
+      onResponse("ok", function () { resolve(true); });
+      sendCommand({ cmd: "reset" });
+      setTimeout(function () { resolve(false); }, 3000);
+    });
+  }
 
   window.PicoSerial = {
     connect: connect,
@@ -225,5 +292,11 @@
     onStatus: onStatus,
     offStatus: offStatus,
     send: send,
+    sendCommand: sendCommand,
+    ping: ping,
+    getConfig: getConfig,
+    putConfig: putConfig,
+    saveToFlash: saveToFlash,
+    resetDevice: resetDevice,
   };
 })();
