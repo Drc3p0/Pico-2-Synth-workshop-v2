@@ -8,7 +8,7 @@
     { value: "pot", label: "Potentiometer", continuous: true, pins: ["GP26","GP27","GP28"] },
     { value: "ldr", label: "LDR (Light)", continuous: true, pins: ["GP26","GP27","GP28"] },
     { value: "button", label: "Button", continuous: false, pins: ["GP0","GP1","GP2","GP3","GP4","GP5","GP6","GP7"] },
-    { value: "touch_native", label: "Touch (Pico GPIO)", continuous: false, pins: ["GP2","GP3","GP4","GP5","GP6","GP7","GP8","GP9","GP10","GP11","GP12","GP13"] },
+    { value: "touch_native", label: "Touch (Pico GPIO)", continuous: false, pins: ["GP0","GP1","GP2","GP3","GP4","GP5","GP6","GP7","GP8","GP9","GP10","GP11","GP12","GP13","GP14","GP18","GP19","GP20","GP21","GP22"] },
     { value: "touch_mpr121", label: "Touch (MPR121 I2C)", continuous: false, pins: (function(){ var a=[]; for(var i=0;i<12;i++) a.push("MPR#"+i); return a; })() },
     { value: "accel", label: "Accelerometer", continuous: true, pins: ["X","Y"] },
     { value: "led", label: "LED Indicator", continuous: false, pins: ["GP0","GP1","GP2","GP3","GP4","GP5","GP6","GP7","GP8","GP9","GP10","GP11","GP12","GP13","GP14","GP25"] },
