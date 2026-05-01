@@ -1931,7 +1931,7 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
 }
 
 .board-wiring-note {
-  margin-top: 20px;
+  margin: 20px 16px 0;
   padding: 16px;
   background: rgba(96, 165, 250, 0.06);
   border: 1px solid var(--border);
@@ -2108,7 +2108,7 @@ input[type="range"]:focus-visible::-webkit-slider-thumb {
 .onboarding-content ol {
   list-style: none;
   counter-reset: onboard-step;
-  padding: 0;
+  padding: 0 16px;
 }
 
 .onboarding-content ol li {
