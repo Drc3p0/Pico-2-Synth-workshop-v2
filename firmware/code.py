@@ -1,65 +1,19 @@
 # ============================================================================
-# PICO 2 SYNTH WORKSHOP v2 — code.py
+# PICO 2 SYNTH WORKSHOP v2 — code.py (Generic Firmware)
 # Synth voices adapted from todbot's circuitpython-synthio-tricks
 # Original synth code by Tod Kurt (@todbot)
 # https://github.com/todbot/circuitpython-synthio-tricks
 # Workshop adaptation by Drc3p0
 # ============================================================================
 #
-# Edit the CONFIG below to choose your voice, assign inputs, and customize!
-# Save this file to your CIRCUITPY drive as code.py
-# ============================================================================
-
-CONFIG = {
-    # ---- Voice Selection ----
-    # Choose: "eighties_dystopia", "tiny_lfo_song", "monosynth",
-    #         "eighties_arp", "wavetable_synth", "falling_forever", "deep_note"
-    "voice": "eighties_dystopia",
-
-    # ---- Self Play ----
-    # Set True to auto-play without any input (great for demos!)
-    "self_play": True,
-
-    # ---- Input Assignments ----
-    # Map physical inputs to voice parameters.
-    # Each voice has different parameters — see the web configurator for details.
-    #
-    # Available input sources:
-    #   "pot_a" (GP26), "pot_b" (GP27), "pot_c" (GP28)
-    #   "ldr_a" (GP26), "ldr_b" (GP27), "ldr_c" (GP28)
-    #   "accel_x", "accel_y"  (LIS3DH accelerometer via I2C)
-    #   "mpr121_0" .. "mpr121_11" (capacitive touch channels)
-    #   "button_0" .. "button_7" (GP0-GP7)
-    #
-    "input_map": {
-        # Example: "filter_freq": "pot_a",
-        # Example: "note_trigger": "button_0",
-    },
-
-    # ---- Hardware Options ----
-    "extended_buttons": False,       # True to use GP4-GP7 as additional buttons
-    "mpr121_enabled": False,         # True if MPR121 captouch is connected
-    "mpr121_boards": 1,              # Number of MPR121 boards (1-4)
-    "accelerometer_enabled": False,  # True if LIS3DH is connected
-    "oled_enabled": True,            # True if 0.91" OLED is connected
-
-    # ---- Effects (optional, layered on top of voice) ----
-    "effects_enabled": False,
-    "echo_mix": 0.0,
-    "reverb_mix": 0.0,
-    "distortion_mix": 0.0,
-
-    # ---- Audio ----
-    "sample_rate": 28000,
-    "audio_pin": "GP15",
-}
-
-
-# ============================================================================
-# Engine — don't edit below this line
+# Flash once. Configure via WebSerial from the browser.
+# On boot, loads /config.json if present, otherwise uses defaults.
 # ============================================================================
 
 import time
+import json
+import sys
+import supervisor
 import board
 import audiopwmio
 import audiomixer
@@ -70,64 +24,196 @@ from lib.inputs import InputManager
 from lib.led_indicator import LEDIndicator
 from lib.voices import load_voice
 
-# --- Audio Setup ---
-SAMPLE_RATE = CONFIG.get("sample_rate", 28000)
-audio_pin = getattr(board, CONFIG.get("audio_pin", "GP15"))
-audio = audiopwmio.PWMAudioOut(audio_pin)
+# ============================================================================
+# Default Configuration
+# ============================================================================
 
-mixer = audiomixer.Mixer(channel_count=1, sample_rate=SAMPLE_RATE, buffer_size=4096)
-synth = synthio.Synthesizer(channel_count=1, sample_rate=SAMPLE_RATE)
+DEFAULT_CONFIG = {
+    "voice": "eighties_dystopia",
+    "self_play": True,
+    "input_map": {},
+    "extended_buttons": False,
+    "mpr121_enabled": False,
+    "mpr121_boards": 1,
+    "accelerometer_enabled": False,
+    "oled_enabled": True,
+    "effects_enabled": False,
+    "echo_mix": 0.0,
+    "reverb_mix": 0.0,
+    "distortion_mix": 0.0,
+    "sample_rate": 28000,
+    "audio_pin": "GP15",
+}
 
-# --- Effects Chain (optional) ---
-final_output = mixer
-if CONFIG.get("effects_enabled", False):
+# ============================================================================
+# Config Load / Save
+# ============================================================================
+
+def load_config():
     try:
-        from lib.fx import EffectsChain
-        effects = EffectsChain(SAMPLE_RATE, 1, 4096)
-        final_output = effects.build_chain(synth)
-        effects.update_from_config(CONFIG)
+        with open("/config.json", "r") as f:
+            loaded = json.load(f)
+        merged = dict(DEFAULT_CONFIG)
+        merged.update(loaded)
+        return merged
     except Exception:
-        mixer.voice[0].play(synth)
-        effects = None
-else:
-    mixer.voice[0].play(synth)
-    effects = None
+        return dict(DEFAULT_CONFIG)
 
-audio.play(final_output if final_output is not mixer else mixer)
-mixer.voice[0].level = 0.85
 
-# --- Inputs ---
-inputs = InputManager(CONFIG)
-i2c = inputs.init_i2c()
-
-# --- OLED Display ---
-oled = None
-if CONFIG.get("oled_enabled", False) and i2c:
+def save_config(config):
     try:
-        from lib.oled_display import OLEDDisplay
-        voice_name = CONFIG.get("voice", "Synth")
-        oled = OLEDDisplay(i2c, voice_name=voice_name)
+        with open("/config.json", "w") as f:
+            json.dump(config, f)
+        return True
     except Exception:
-        oled = None
+        return False
 
-# --- LED Indicator ---
-led = LEDIndicator()
+# ============================================================================
+# Serial Protocol
+# ============================================================================
 
-# --- Load Voice ---
-voice = load_voice(CONFIG.get("voice", "eighties_dystopia"), synth, CONFIG)
-
-# --- Input Mapping ---
-input_map = CONFIG.get("input_map", {})
+_serial_buf = ""
+_VERSION = "2.0"
 
 
-def _get_input_value(source_name):
-    """Read a named input source and return its normalized value."""
+def serial_send(obj):
+    print(json.dumps(obj))
+
+
+def serial_check():
+    global _serial_buf
+    if not supervisor.runtime.serial_bytes_available:
+        return None
+    while supervisor.runtime.serial_bytes_available:
+        ch = sys.stdin.read(1)
+        if ch is None:
+            break
+        if ch == "\n" or ch == "\r":
+            line = _serial_buf.strip()
+            _serial_buf = ""
+            if line:
+                return line
+        else:
+            _serial_buf += ch
+    return None
+
+
+def handle_command(line, config, voice, synth, inputs, oled):
+    try:
+        msg = json.loads(line)
+    except Exception:
+        serial_send({"resp": "error", "msg": "bad json"})
+        return config, voice, inputs, oled, False
+
+    cmd = msg.get("cmd", "")
+    need_rebuild = False
+
+    if cmd == "ping":
+        serial_send({"resp": "pong", "version": _VERSION})
+
+    elif cmd == "get_config":
+        serial_send({"resp": "config", "data": config})
+
+    elif cmd == "put_config":
+        new_data = msg.get("data", {})
+        old_voice = config.get("voice")
+        old_hw_keys = (
+            config.get("extended_buttons"),
+            config.get("mpr121_enabled"),
+            config.get("mpr121_boards"),
+            config.get("accelerometer_enabled"),
+        )
+        config.update(new_data)
+
+        new_hw_keys = (
+            config.get("extended_buttons"),
+            config.get("mpr121_enabled"),
+            config.get("mpr121_boards"),
+            config.get("accelerometer_enabled"),
+        )
+
+        # Rebuild inputs if hardware config changed
+        if old_hw_keys != new_hw_keys:
+            need_rebuild = True
+
+        # Reload voice if voice changed
+        if config.get("voice") != old_voice:
+            voice = load_voice(config.get("voice", "eighties_dystopia"), synth, config)
+
+        serial_send({"resp": "ok"})
+
+    elif cmd == "save":
+        ok = save_config(config)
+        serial_send({"resp": "saved" if ok else "error", "msg": "" if ok else "write failed"})
+
+    elif cmd == "reset":
+        config = dict(DEFAULT_CONFIG)
+        voice = load_voice(config.get("voice", "eighties_dystopia"), synth, config)
+        need_rebuild = True
+        serial_send({"resp": "ok"})
+
+    else:
+        serial_send({"resp": "error", "msg": "unknown cmd"})
+
+    if need_rebuild:
+        inputs = InputManager(config)
+        inputs.init_i2c()
+        oled = _init_oled(config, inputs)
+
+    return config, voice, inputs, oled, need_rebuild
+
+# ============================================================================
+# Monitoring
+# ============================================================================
+
+def build_monitor(config, inputs):
+    mon = {"mon": True}
+
+    # Pots / ADC
+    pot_vals = []
+    for i in range(len(inputs.analogs)):
+        a = inputs.analogs[i]
+        if a and a.available:
+            pot_vals.append(a.value)
+        else:
+            pot_vals.append(0)
+    if pot_vals:
+        mon["pot"] = pot_vals
+
+    # Buttons
+    if inputs.buttons and inputs.buttons.available:
+        btn_states = []
+        for i in range(inputs.buttons.count):
+            btn_states.append(0)
+        mon["btn"] = btn_states
+
+    # Touch
+    if inputs.mpr121:
+        touched = inputs.get_mpr121_touched()
+        num_ch = config.get("mpr121_boards", 1) * 12
+        touch_states = []
+        for i in range(num_ch):
+            touch_states.append(1 if i in touched else 0)
+        mon["touch"] = touch_states
+
+    # Accelerometer
+    if inputs.accelerometer:
+        x, y = inputs.get_accel()
+        mon["accel"] = [round(x, 3), round(y, 3)]
+
+    return mon
+
+# ============================================================================
+# Helpers
+# ============================================================================
+
+def _get_input_value(source_name, inputs):
     if source_name.startswith("pot_") or source_name.startswith("ldr_"):
         idx = ord(source_name[-1]) - ord("a")
         return inputs.get_analog(idx)
     elif source_name == "accel_x":
         x, _ = inputs.get_accel()
-        return (x + 1.0) / 2.0  # map -1..1 to 0..1
+        return (x + 1.0) / 2.0
     elif source_name == "accel_y":
         _, y = inputs.get_accel()
         return (y + 1.0) / 2.0
@@ -136,22 +222,100 @@ def _get_input_value(source_name):
         touched = inputs.get_mpr121_touched()
         return 1.0 if ch in touched else 0.0
     elif source_name.startswith("button_"):
-        # Buttons handled via events, not polling
         return None
     return None
 
 
-# --- Main Loop ---
-print("Pico 2 Synth Workshop v2")
-print("Voice:", voice.name)
-print("Self-play:", CONFIG.get("self_play", True))
+def _init_oled(config, inputs):
+    if config.get("oled_enabled", False):
+        try:
+            i2c = None
+            import busio
+            sda = getattr(board, InputManager.I2C_SDA, None)
+            scl = getattr(board, InputManager.I2C_SCL, None)
+            if sda and scl:
+                i2c = busio.I2C(scl=scl, sda=sda)
+        except Exception:
+            i2c = None
+        if i2c:
+            try:
+                from lib.oled_display import OLEDDisplay
+                return OLEDDisplay(i2c, voice_name=config.get("voice", "Synth"))
+            except Exception:
+                pass
+    return None
+
+# ============================================================================
+# Boot
+# ============================================================================
+
+CONFIG = load_config()
+
+SAMPLE_RATE = CONFIG.get("sample_rate", 28000)
+audio_pin = getattr(board, CONFIG.get("audio_pin", "GP15"))
+audio = audiopwmio.PWMAudioOut(audio_pin)
+
+mixer = audiomixer.Mixer(channel_count=1, sample_rate=SAMPLE_RATE, buffer_size=4096)
+synth = synthio.Synthesizer(channel_count=1, sample_rate=SAMPLE_RATE)
+
+# --- Effects Chain ---
+final_output = mixer
+effects = None
+if CONFIG.get("effects_enabled", False):
+    try:
+        from lib.fx import EffectsChain
+        effects = EffectsChain(SAMPLE_RATE, 1, 4096)
+        final_output = effects.build_chain(synth)
+        effects.update_from_config(CONFIG)
+    except Exception:
+        mixer.voice[0].play(synth)
+else:
+    mixer.voice[0].play(synth)
+
+audio.play(final_output if final_output is not mixer else mixer)
+mixer.voice[0].level = 0.85
+
+# --- Inputs ---
+inputs = InputManager(CONFIG)
+i2c = inputs.init_i2c()
+
+# --- OLED ---
+oled = None
+if CONFIG.get("oled_enabled", False) and i2c:
+    try:
+        from lib.oled_display import OLEDDisplay
+        oled = OLEDDisplay(i2c, voice_name=CONFIG.get("voice", "Synth"))
+    except Exception:
+        oled = None
+
+# --- LED ---
+led = LEDIndicator()
+
+# --- Voice ---
+voice = load_voice(CONFIG.get("voice", "eighties_dystopia"), synth, CONFIG)
+
+# ============================================================================
+# Main Loop
+# ============================================================================
+
+print("Pico 2 Synth Workshop v2 (generic firmware)")
+print("Voice: " + voice.name)
+
+_loop_count = 0
 
 while True:
-    # Process button events
+    # --- Serial Commands ---
+    line = serial_check()
+    if line is not None:
+        CONFIG, voice, inputs, oled, _ = handle_command(
+            line, CONFIG, voice, synth, inputs, oled
+        )
+        input_map = CONFIG.get("input_map", {})
+
+    # --- Button Events ---
+    input_map = CONFIG.get("input_map", {})
     for btn_idx, pressed in inputs.get_button_events():
         led.pulse()
-
-        # Check if any param is mapped to this button
         btn_source = "button_{}".format(btn_idx)
         for param_name, source in input_map.items():
             if source == btn_source:
@@ -162,16 +326,15 @@ while True:
                         oled.toggle_verbose(param_name)
                         oled.show_input(param_name, "ON")
 
-        # Default: buttons 0-3 trigger notes (if not mapped to params)
         if btn_source not in input_map.values():
-            scale = [0, 4, 7, 12, -5, -12, 5, 9]  # chromatic-friendly intervals
+            scale = [0, 4, 7, 12, -5, -12, 5, 9]
             midi_note = 48 + (scale[btn_idx % len(scale)])
             if pressed:
                 voice.note_on(midi_note)
             else:
                 voice.note_off(midi_note)
 
-    # Process MPR121 touch events
+    # --- MPR121 Touch Events ---
     if inputs.mpr121:
         for ch, pressed in inputs.mpr121.get_events():
             led.pulse()
@@ -180,7 +343,6 @@ while True:
                 if source == touch_source:
                     if pressed:
                         voice.set_param(param_name, 1)
-            # Default: MPR121 triggers chromatic notes from C3
             if touch_source not in input_map.values():
                 midi_note = 48 + ch
                 if pressed:
@@ -188,9 +350,9 @@ while True:
                 else:
                     voice.note_off(midi_note)
 
-    # Process continuous inputs (pots, LDRs, accelerometer)
+    # --- Continuous Inputs ---
     for param_name, source in input_map.items():
-        val = _get_input_value(source)
+        val = _get_input_value(source, inputs)
         if val is not None:
             param_info = voice.get_params().get(param_name, {})
             if param_info.get("type") == "continuous":
@@ -199,16 +361,25 @@ while True:
                 mapped = map_range(val, 0.0, 1.0, p_min, p_max)
                 voice.set_param(param_name, mapped)
 
-    # Activity LED
+    # --- LED ---
     if inputs.any_activity():
         led.pulse()
     led.update()
 
-    # Voice update (self-play, filter updates, etc.)
+    # --- Voice ---
     voice.update()
 
-    # OLED update
+    # --- OLED ---
     if oled:
         oled.update()
+
+    # --- Monitoring (every ~50ms = every 10 loops) ---
+    _loop_count += 1
+    if _loop_count >= 10:
+        _loop_count = 0
+        try:
+            serial_send(build_monitor(CONFIG, inputs))
+        except Exception:
+            pass
 
     time.sleep(0.005)
