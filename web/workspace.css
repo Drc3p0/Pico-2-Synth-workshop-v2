@@ -1,4 +1,4 @@
-/* workspace.css - Drag-drop workspace, circular pots, dark mode purple/teal */
+/* workspace.css - Active Hardware Zone, palette, dark mode purple/teal */
 
 :root {
   --ws-purple: #8B5CF6;
@@ -16,148 +16,158 @@
   --ws-danger: #ef4444;
 }
 
-/* ===================== Layout: Palette + Workspace ===================== */
-
-.workspace-layout {
-  display: flex;
-  gap: 0;
-  position: relative;
-  min-height: 400px;
+.serial-status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #555;
+  display: inline-block;
 }
 
-.workspace-palette {
-  flex: 1;
-  min-width: 300px;
-  overflow-y: auto;
-  padding-right: 8px;
+.serial-status-dot.connected {
+  background: #22c55e;
+  box-shadow: 0 0 6px #22c55e;
 }
 
-.workspace-splitter {
-  width: 6px;
-  cursor: col-resize;
-  background: var(--ws-border);
-  border-radius: 3px;
-  flex-shrink: 0;
-  transition: background 0.15s;
-  position: relative;
-  z-index: 5;
+.serial-status-dot.connecting {
+  background: #f59e0b;
+  animation: pulse-dot 1s infinite;
 }
 
-.workspace-splitter:hover,
-.workspace-splitter:active {
-  background: var(--ws-purple);
+.serial-status-dot.error {
+  background: var(--ws-danger);
 }
 
-.workspace-dropzone {
-  width: 380px;
-  min-width: 250px;
-  max-width: 800px;
-  position: sticky;
-  top: 0;
-  align-self: flex-start;
-  max-height: 100vh;
-  overflow-y: auto;
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* ===================== Active Hardware Zone ===================== */
+
+.hw-zone-container {
+  margin-bottom: 16px;
+}
+
+.hw-zone {
   background: var(--ws-bg-dark);
-  border: 2px dashed var(--ws-border);
+  border: 2px solid var(--ws-border);
   border-radius: 12px;
-  padding: 12px;
+  min-height: 300px;
+  overflow: visible;
   transition: border-color 0.2s, background 0.2s;
-  z-index: 10;
 }
 
-.workspace-dropzone.workspace-dragover {
+.hw-zone.hw-zone-dragover {
   border-color: var(--ws-teal);
   background: var(--ws-teal-glow);
 }
 
-.workspace-dropzone::-webkit-scrollbar {
-  width: 6px;
-}
-
-.workspace-dropzone::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.workspace-dropzone::-webkit-scrollbar-thumb {
+.hw-zone-resize-handle {
+  width: 60px;
+  height: 6px;
+  margin: 4px auto 0 auto;
   background: var(--ws-border);
   border-radius: 3px;
+  cursor: ns-resize;
+  transition: background 0.15s;
 }
 
-/* ===================== Workspace Header ===================== */
+.hw-zone-resize-handle:hover,
+.hw-zone-resize-handle:active {
+  background: var(--ws-teal);
+}
 
-.workspace-dropzone-header {
+.hw-zone-header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 4px 4px 12px 4px;
+  justify-content: space-between;
+  padding: 8px 16px;
   border-bottom: 1px solid var(--ws-border);
-  margin-bottom: 12px;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: var(--ws-teal);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
-/* ===================== Empty State ===================== */
+/* ===================== Hardware Zone Empty State ===================== */
 
-.workspace-empty {
+.hw-zone-empty {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 48px 16px;
+  padding: 60px 16px;
   color: var(--ws-text-dim);
   text-align: center;
+  pointer-events: none;
 }
 
-.workspace-empty-icon {
-  font-size: 2.5rem;
+.hw-zone-empty-icon {
+  font-size: 3rem;
   margin-bottom: 12px;
-  opacity: 0.4;
+  opacity: 0.3;
 }
 
-.workspace-empty p {
+.hw-zone-empty p {
   font-size: 0.85rem;
-  max-width: 200px;
+  max-width: 280px;
   line-height: 1.4;
 }
 
-/* ===================== Workspace Cards ===================== */
+/* ===================== Hardware Zone Items ===================== */
 
-.workspace-card {
+.hw-zone-item {
   background: var(--ws-bg-card);
   border: 1px solid var(--ws-border);
-  border-radius: 8px;
-  padding: 10px 12px;
-  margin-bottom: 8px;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  border-radius: 10px;
+  padding: 8px 10px;
+  width: 140px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  transition: box-shadow 0.15s, border-color 0.15s;
 }
 
-.workspace-card:hover {
+.hw-zone-item:hover {
   border-color: var(--ws-purple-dim);
-  box-shadow: 0 0 12px var(--ws-purple-glow);
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.2);
 }
 
-.workspace-card--keys {
+.hw-zone-item--pot,
+.hw-zone-item--ldr {
   border-left: 3px solid var(--ws-teal);
 }
 
-.workspace-card-header {
+.hw-zone-item--button,
+.hw-zone-item--touch_native,
+.hw-zone-item--touch_mpr121 {
+  border-left: 3px solid var(--ws-purple);
+}
+
+.hw-zone-item--led {
+  border-left: 3px solid #fbbf24;
+}
+
+.hw-zone-item--oled {
+  border-left: 3px solid #60a5fa;
+}
+
+.hw-zone-item--keys {
+  border-left: 3px solid var(--ws-teal);
+  width: 220px;
+}
+
+.hw-item-header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: 6px;
+  margin-bottom: 6px;
+  user-select: none;
 }
 
-.workspace-card-icon {
-  color: var(--ws-teal);
-  flex-shrink: 0;
-}
-
-.workspace-card-title {
+.hw-item-title {
   flex: 1;
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: var(--ws-text);
   white-space: nowrap;
@@ -165,93 +175,189 @@
   text-overflow: ellipsis;
 }
 
-.workspace-card-remove {
+.hw-item-remove {
   background: none;
   border: none;
   color: var(--ws-text-dim);
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   cursor: pointer;
-  padding: 0 4px;
+  padding: 0 3px;
   line-height: 1;
-  border-radius: 4px;
+  border-radius: 3px;
   transition: color 0.15s, background 0.15s;
 }
 
-.workspace-card-remove:hover {
+.hw-item-remove:hover {
   color: var(--ws-danger);
   background: rgba(239, 68, 68, 0.1);
 }
 
-/* ===================== Hardware Selectors ===================== */
-
-.workspace-card-hw {
+.hw-item-config {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-bottom: 8px;
+  gap: 4px;
+  margin-bottom: 4px;
   flex-wrap: wrap;
 }
 
-.workspace-card-hw label {
-  font-size: 0.75rem;
-  color: var(--ws-text-dim);
-  flex-shrink: 0;
-}
-
-.workspace-hw-select,
-.workspace-gpio-select {
+.hw-item-type-select,
+.hw-item-gpio-select {
   background: var(--ws-bg-dark);
   border: 1px solid var(--ws-border);
   color: var(--ws-text);
   border-radius: 4px;
-  padding: 3px 6px;
-  font-size: 0.75rem;
+  padding: 2px 5px;
+  font-size: 0.7rem;
   outline: none;
   transition: border-color 0.15s;
 }
 
-.workspace-hw-select:focus,
-.workspace-gpio-select:focus {
+.hw-item-type-select:focus,
+.hw-item-gpio-select:focus {
   border-color: var(--ws-purple);
 }
 
-.workspace-gpio-select--sm {
-  max-width: 100px;
-}
-
-/* ===================== Key Config Area ===================== */
-
-.workspace-card-config {
-  margin-top: 6px;
-}
-
-.workspace-card-gpio-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 4px;
-}
-
-.workspace-key-label {
-  font-size: 0.7rem;
-  color: var(--ws-text-dim);
-  min-width: 50px;
-}
-
-.workspace-card-note {
-  font-size: 0.7rem;
-  color: var(--ws-teal-dim);
-  font-style: italic;
-  margin: 4px 0 8px 0;
-  line-height: 1.3;
-}
-
-/* ===================== Knob in Card ===================== */
-
-.workspace-card-knob {
+.hw-item-body {
   display: flex;
   justify-content: center;
+  align-items: center;
   padding: 4px 0;
+  min-height: 40px;
+}
+
+/* ===================== Widget Visuals: Button ===================== */
+
+.hw-visual-button {
+  width: 50px;
+  height: 50px;
+  border-radius: 8px;
+  background: #2a2a4a;
+  border: 2px solid #3d3d5c;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.1s, transform 0.1s;
+  user-select: none;
+}
+
+.hw-visual-button:hover {
+  background: #333355;
+}
+
+.hw-visual-button.hw-btn-pressed {
+  background: var(--ws-purple);
+  border-color: var(--ws-purple-dim);
+  transform: scale(0.95);
+}
+
+.hw-btn-cap {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #444466;
+  border: 1px solid #555577;
+  transition: background 0.1s;
+}
+
+.hw-btn-pressed .hw-btn-cap {
+  background: #a78bfa;
+}
+
+/* ===================== Widget Visuals: Touch Pad ===================== */
+
+.hw-visual-touch {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: #1a2a3a;
+  border: 2px solid #2a3a4a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem;
+  color: var(--ws-text-dim);
+  cursor: pointer;
+  transition: background 0.1s, border-color 0.1s;
+  user-select: none;
+}
+
+.hw-visual-touch.hw-touch-active {
+  background: var(--ws-teal-glow);
+  border-color: var(--ws-teal);
+  color: var(--ws-teal);
+}
+
+/* ===================== Widget Visuals: Accelerometer ===================== */
+
+.hw-visual-accel {
+  width: 60px;
+  height: 60px;
+  border-radius: 8px;
+  background: #1a1a2e;
+  border: 1px solid var(--ws-border);
+  position: relative;
+  overflow: hidden;
+}
+
+.hw-accel-ball {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--ws-teal);
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  transition: top 0.1s, left 0.1s;
+}
+
+/* ===================== Widget Visuals: LED ===================== */
+
+.hw-visual-led {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #333;
+  border: 2px solid #555;
+  box-shadow: 0 0 4px rgba(251, 191, 36, 0.2);
+  transition: background 0.2s, box-shadow 0.2s;
+}
+
+.hw-visual-led.hw-led-on {
+  background: #fbbf24;
+  box-shadow: 0 0 12px rgba(251, 191, 36, 0.6);
+}
+
+/* ===================== Widget Visuals: OLED ===================== */
+
+.hw-visual-oled {
+  background: #000;
+  border: 2px solid #333;
+  border-radius: 4px;
+  padding: 2px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.hw-oled-canvas {
+  width: 128px;
+  height: 64px;
+  background: #000;
+  image-rendering: pixelated;
+}
+
+.hw-oled-label {
+  font-size: 0.6rem;
+  color: var(--ws-text-dim);
+  margin-top: 4px;
+}
+
+.hw-oled-pin {
+  font-size: 0.6rem;
+  color: var(--ws-text-dim);
+  margin-right: 8px;
 }
 
 /* ===================== Circular Pot ===================== */
@@ -263,20 +369,198 @@
   cursor: pointer;
 }
 
-/* ===================== Palette Param Row ===================== */
+/* ===================== Controls Promotable Row ===================== */
 
-.palette-param-row {
-  display: flex;
+.controls-promotable {
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
+  gap: 4px;
+  padding: 3px 6px;
+  border-radius: 6px;
+  transition: background 0.15s;
+  font-size: 0.75rem;
+}
+
+.controls-promotable[draggable="true"] {
+  cursor: grab;
+}
+
+.controls-promotable[draggable="true"]:hover {
+  background: var(--ws-purple-glow);
+}
+
+.controls-promotable .promote-handle {
+  color: var(--ws-text-dim);
+  opacity: 0.3;
+  font-size: 0.7rem;
+  transition: opacity 0.15s;
+}
+
+.controls-promotable:hover .promote-handle {
+  opacity: 1;
+  color: var(--ws-purple);
+}
+
+.controls-promotable label {
+  font-size: 0.75rem;
+}
+
+.controls-promotable select,
+.controls-promotable input[type="range"] {
+  font-size: 0.7rem;
+  padding: 1px 3px;
+  max-width: 120px;
+}
+
+/* ===================== Workspace Layout (side-by-side) ===================== */
+
+.workspace-layout {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+  align-items: flex-start;
+}
+
+.workspace-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.workspace-sidebar {
+  flex: 0 0 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: calc(100vh - 140px);
+  overflow-y: auto;
+  position: sticky;
+  top: 8px;
+}
+
+/* ===================== Builder Columns (now vertical in sidebar) ===================== */
+
+.builder-col {
   background: var(--ws-bg-card);
   border: 1px solid var(--ws-border);
   border-radius: 8px;
-  margin-bottom: 6px;
+  padding: 8px;
+  overflow-y: auto;
+  max-height: 220px;
+}
+
+.builder-col--controls {
+  max-height: none;
+}
+
+.builder-col--params {
+  min-width: 0;
+}
+
+.builder-col--keys {
+  min-width: 0;
+}
+
+.builder-col-title {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ws-teal);
+  margin: 0 0 6px 0;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--ws-border);
+}
+
+.controls-compact {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.ctrl-inline {
+  font-size: 0.65rem;
+  color: var(--ws-text);
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  cursor: pointer;
+}
+
+.ctrl-inline input[type="checkbox"] {
+  accent-color: var(--ws-teal);
+}
+
+.ctrl-select {
+  font-size: 0.65rem;
+  padding: 1px 3px;
+  background: var(--ws-bg-dark);
+  border: 1px solid var(--ws-border);
+  color: var(--ws-text);
+  border-radius: 3px;
+  max-width: 110px;
+}
+
+.ctrl-label {
+  font-size: 0.65rem;
+  color: var(--ws-text-dim);
+}
+
+.ctrl-range {
+  width: 70px;
+  height: 12px;
+}
+
+.btn-xs {
+  font-size: 0.65rem;
+  padding: 1px 6px;
+  line-height: 1.4;
+}
+
+.waveform-container {
+  margin-bottom: 8px;
+}
+
+@media (max-width: 900px) {
+  .workspace-layout {
+    flex-direction: column;
+  }
+
+  .workspace-sidebar {
+    flex: none;
+    width: 100%;
+    max-height: none;
+    position: static;
+  }
+
+  .builder-col {
+    max-height: none;
+  }
+}
+
+/* ===================== Palette ===================== */
+
+.palette-param-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.palette-param-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 8px;
+  background: var(--ws-bg-card);
+  border: 1px solid var(--ws-border);
+  border-radius: 8px;
   cursor: grab;
   transition: border-color 0.15s, box-shadow 0.15s;
   user-select: none;
+  width: 70px;
+  min-height: 70px;
+  text-align: center;
 }
 
 .palette-param-row:hover {
@@ -284,10 +568,7 @@
   box-shadow: 0 0 8px var(--ws-purple-glow);
 }
 
-.palette-param-row.dragging {
-  opacity: 0.5;
-}
-
+.palette-param-row.dragging { opacity: 0.5; }
 .palette-param-row.in-workspace {
   border-color: var(--ws-teal-dim);
   background: var(--ws-teal-glow);
@@ -298,36 +579,22 @@
   flex-shrink: 0;
 }
 
-.palette-param-info {
-  flex: 1;
-  min-width: 0;
-}
-
+.palette-param-info { min-width: 0; }
 .palette-param-name {
-  font-size: 0.85rem;
+  font-size: 0.6rem;
   font-weight: 500;
   color: var(--ws-text);
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 70px;
+  white-space: nowrap;
 }
+.palette-param-range { display: none; }
 
-.palette-param-range {
-  font-size: 0.65rem;
-  color: var(--ws-text-dim);
-}
+.palette-drag-handle { display: none; }
 
-.palette-drag-handle {
-  color: var(--ws-text-dim);
-  font-size: 1rem;
-  flex-shrink: 0;
-  opacity: 0.4;
-  transition: opacity 0.15s;
-}
-
-.palette-param-row:hover .palette-drag-handle {
-  opacity: 1;
-  color: var(--ws-purple);
-}
-
-/* ===================== Key Drag Items ===================== */
+/* ===================== Key Palette ===================== */
 
 .palette-key-drag {
   display: inline-flex;
@@ -344,9 +611,7 @@
   user-select: none;
 }
 
-.palette-key-drag:hover {
-  border-color: var(--ws-teal);
-}
+.palette-key-drag:hover { border-color: var(--ws-teal); }
 
 .palette-keys-row {
   display: flex;
@@ -371,45 +636,66 @@
   user-select: none;
 }
 
-.palette-drag-all-keys:hover {
-  background: rgba(20, 184, 166, 0.25);
+.palette-drag-all-keys:hover { background: rgba(20, 184, 166, 0.25); }
+
+/* ===================== Waveform Draggable ===================== */
+
+.waveform-draggable {
+  cursor: grab;
+  border: 1px dashed transparent;
+  border-radius: 8px;
+  transition: border-color 0.15s;
+  padding: 4px;
+}
+
+.waveform-draggable:hover {
+  border-color: var(--ws-purple-dim);
+}
+
+.waveform-drag-hint {
+  font-size: 0.65rem;
+  color: var(--ws-text-dim);
+  text-align: center;
+  margin-top: 4px;
+  opacity: 0.6;
+}
+
+/* ===================== Section Titles ===================== */
+
+.section-title-collapsible {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+  padding: 8px 0;
+}
+
+.section-title-collapsible .collapse-arrow {
+  transition: transform 0.2s;
+  color: var(--ws-text-dim);
+  font-size: 0.75rem;
+}
+
+.section-title-collapsible.collapsed .collapse-arrow {
+  transform: rotate(-90deg);
 }
 
 /* ===================== Responsive ===================== */
 
 @media (max-width: 768px) {
-  .workspace-layout {
-    flex-direction: column;
+  .hw-zone-item {
+    width: 120px;
   }
 
-  .workspace-dropzone {
-    position: sticky;
-    top: 0;
-    width: 100% !important;
-    min-width: 100% !important;
-    max-width: 100% !important;
-    max-height: 40vh;
-    order: -1;
-    border-radius: 0 0 12px 12px;
-  }
-
-  .workspace-splitter {
-    display: none;
-  }
-
-  .workspace-palette {
-    padding-right: 0;
-    min-width: 100%;
+  .hw-zone {
+    min-height: 200px;
   }
 }
 
 @media (max-width: 480px) {
-  .workspace-dropzone {
-    max-height: 35vh;
-    padding: 8px;
-  }
-
-  .workspace-card {
-    padding: 8px;
+  .hw-zone-item {
+    padding: 6px;
+    width: 110px;
   }
 }
