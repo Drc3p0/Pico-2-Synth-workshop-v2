@@ -168,7 +168,7 @@
    var state = {
      selectedVoice: "eighties_dystopia",
      boardType: "pico2",
-     useWav: false,
+      useWav: true,
      latchMode: false,
      currentOctave: 3,
      currentScale: "pentatonic_major",
@@ -217,7 +217,6 @@
   var $ = function (id) { return document.getElementById(id); };
 
    var $voiceSelect     = $("voice-select");
-    var $wavToggle       = $("wav-toggle");
     var $latchToggle     = $("latch-toggle");
     var $waveformCanvas  = $("waveform-canvas");
     var $keyboard        = $("keyboard");
@@ -240,7 +239,9 @@
     var $btnDownloadCode = $("btn-download-code");
     var $btnDownloadJson = $("btn-download-json");
     var $btnDownloadBundle = $("btn-download-bundle");
-    var $btnConnectPico  = $("btn-connect-pico");
+    var $btnConnectPico  = $("btn-connect");
+    var $btnSaveDevice   = $("btn-save-device");
+    var $serialStatus    = $("serial-status");
     var $onboarding      = $("onboarding");
     var $boardSelect     = $("board-select");
     var $boardHint       = $("board-hint");
@@ -1103,26 +1104,8 @@
   }
 
   // =========================================================================
-  // WAV file toggle
+  // WAV files included by default (todbot wavetables)
   // =========================================================================
-
-   function initWavToggle() {
-    if (!$wavToggle) return;
-    $wavToggle.addEventListener("change", function () {
-      state.useWav = $wavToggle.checked;
-      if ($onboarding) {
-        var wavNote = $onboarding.querySelector(".note");
-        if (wavNote) {
-          wavNote.style.display = state.useWav ? "block" : "none";
-        }
-      }
-      if (browserVoice && typeof browserVoice.setParam === "function") {
-        browserVoice.setParam("use_wav", state.useWav ? 1 : 0);
-      }
-      scheduleCodeUpdate();
-      updateRequirementsList();
-    });
-  }
 
   // =========================================================================
   // Hardware checkboxes (MPR121, Accelerometer)
@@ -1342,6 +1325,28 @@
     }
 
     renderKeyPalette();
+  }
+
+  function syncPaletteToZone() {
+    var rows = document.querySelectorAll('.palette-param-row');
+    var inZone = {};
+    if (hwZone) {
+      for (var id in hwZone.items) {
+        var it = hwZone.items[id];
+        if (it.paramName) inZone[it.paramName] = true;
+      }
+    }
+    for (var i = 0; i < rows.length; i++) {
+      var pName = rows[i].getAttribute('data-param');
+      var cb = rows[i].querySelector('.palette-param-checkbox');
+      if (inZone[pName]) {
+        rows[i].classList.add('in-workspace');
+        if (cb) cb.checked = true;
+      } else {
+        rows[i].classList.remove('in-workspace');
+        if (cb) cb.checked = false;
+      }
+    }
   }
 
   function renderKeyPalette() {
@@ -1601,6 +1606,7 @@
         ctx.lineTo(w, h / 2);
         ctx.stroke();
         ctx.globalAlpha = 1;
+        drawOledMirrors(null, null);
         return;
       }
 
@@ -1658,6 +1664,49 @@
         x += sliceWidth;
       }
       ctx.stroke();
+
+      drawOledMirrors(analyser, dataArray);
+    }
+
+    function drawOledMirrors(analyserNode, sourceDataArray) {
+      var oledCanvases = document.querySelectorAll('.hw-oled-canvas');
+      if (!oledCanvases.length) return;
+
+      for (var ci = 0; ci < oledCanvases.length; ci++) {
+        var oc = oledCanvases[ci];
+        var octx = oc.getContext("2d");
+        var ow = oc.width;
+        var oh = oc.height;
+
+        octx.fillStyle = "#000";
+        octx.fillRect(0, 0, ow, oh);
+
+        if (!analyserNode || !sourceDataArray) {
+          octx.strokeStyle = "#14B8A6";
+          octx.lineWidth = 1;
+          octx.globalAlpha = 0.3;
+          octx.beginPath();
+          octx.moveTo(0, oh / 2);
+          octx.lineTo(ow, oh / 2);
+          octx.stroke();
+          octx.globalAlpha = 1;
+          continue;
+        }
+
+        octx.beginPath();
+        octx.lineWidth = 1.5;
+        octx.strokeStyle = "#14B8A6";
+        var oSlice = ow / sourceDataArray.length;
+        var ox = 0;
+        for (var oi = 0; oi < sourceDataArray.length; oi++) {
+          var ov = sourceDataArray[oi] / 128.0;
+          var oy = (ov * oh) / 2;
+          if (oi === 0) octx.moveTo(ox, oy);
+          else octx.lineTo(ox, oy);
+          ox += oSlice;
+        }
+        octx.stroke();
+      }
     }
 
     draw();
@@ -2329,34 +2378,131 @@
   function initSerial() {
     if (!window.PicoSerial) return;
 
-    // Connect button
     if ($btnConnectPico) {
       $btnConnectPico.addEventListener("click", function () {
         if (PicoSerial.isConnected()) {
           PicoSerial.disconnect();
         } else {
-          PicoSerial.connect();
+          connectAndSync();
         }
       });
     }
 
-    // Status callback
+    if ($btnSaveDevice) {
+      $btnSaveDevice.addEventListener("click", function () {
+        saveConfigToDevice();
+      });
+    }
+
     PicoSerial.onStatus(function (info) {
-      if (!$btnConnectPico) return;
-      if (info.connected) {
-        $btnConnectPico.textContent = "Disconnect";
-        $btnConnectPico.classList.add("btn--primary");
-      } else {
-        $btnConnectPico.textContent = "Connect Pico";
-        $btnConnectPico.classList.remove("btn--primary");
+      if ($serialStatus) {
+        $serialStatus.className = "serial-status-dot " + info.status;
+      }
+      if ($btnConnectPico) {
+        if (info.connected) {
+          $btnConnectPico.textContent = "Disconnect";
+          if ($btnSaveDevice) $btnSaveDevice.style.display = "";
+        } else {
+          $btnConnectPico.textContent = "Connect";
+          if ($btnSaveDevice) $btnSaveDevice.style.display = "none";
+        }
       }
     });
+  }
 
-    // Data callback
-    PicoSerial.onData(function (data) {
-      if (!data || data._raw) return;
-      handleSerialData(data);
-    });
+  function buildDeviceConfig() {
+    var voiceKey = state.selectedVoice;
+    var inputMap = {};
+
+    if (hwZone) {
+      for (var id in hwZone.items) {
+        var it = hwZone.items[id];
+        if (!it.paramName || !it.hwType || !it.gpio) continue;
+        var src = null;
+        if (it.hwType === "pot") {
+          var gpioNum = (it.gpio || "").replace("GP", "");
+          if (gpioNum === "26") src = "pot_a";
+          else if (gpioNum === "27") src = "pot_b";
+          else if (gpioNum === "28") src = "pot_c";
+        } else if (it.hwType === "ldr") {
+          var ldrNum = (it.gpio || "").replace("GP", "");
+          if (ldrNum === "26") src = "ldr_a";
+          else if (ldrNum === "27") src = "ldr_b";
+          else if (ldrNum === "28") src = "ldr_c";
+        } else if (it.hwType === "button") {
+          var btnPin = (it.gpio || "").replace("GP", "");
+          src = "button_" + btnPin;
+        } else if (it.hwType === "accel") {
+          src = "accel_x";
+        } else if (it.hwType === "touch_native") {
+          var touchPin = (it.gpio || "").replace("GP", "");
+          src = "touch_" + touchPin;
+        } else if (it.hwType === "touch_mpr121") {
+          var mprCh = (it.gpio || "").replace("CH", "");
+          src = "mpr121_" + mprCh;
+        }
+        if (src) inputMap[it.paramName] = src;
+      }
+    }
+
+    var hasAccel = false;
+    var hasMpr121 = false;
+    var hasOled = false;
+    if (hwZone) {
+      var conns = hwZone.getActiveConnections();
+      hasAccel = !!conns.accelerometer;
+      hasMpr121 = !!conns.mpr121;
+      hasOled = !!conns.oled;
+    }
+
+    return {
+      voice: voiceKey,
+      self_play: false,
+      input_map: inputMap,
+      extended_buttons: false,
+      mpr121_enabled: hasMpr121,
+      mpr121_boards: 1,
+      accelerometer_enabled: hasAccel,
+      oled_enabled: hasOled,
+      use_wav: true,
+      effects_enabled: false,
+      sample_rate: 28000,
+      audio_pin: "GP15"
+    };
+  }
+
+  async function connectAndSync() {
+    var ok = await PicoSerial.connect();
+    if (!ok) return;
+
+    var pong = await PicoSerial.ping();
+    if (!pong) {
+      console.warn("Device did not respond to ping");
+      return;
+    }
+    console.log("Connected to:", pong.version);
+
+    var deviceConfig = await PicoSerial.getConfig();
+    if (deviceConfig) {
+      console.log("Loaded config from device");
+    }
+  }
+
+  async function saveConfigToDevice() {
+    if (!PicoSerial.isConnected()) return;
+    var config = buildDeviceConfig();
+    var ok = await PicoSerial.putConfig(config);
+    if (!ok) {
+      console.error("Failed to push config");
+      return;
+    }
+    var saved = await PicoSerial.saveToFlash();
+    if (saved) {
+      if ($btnSaveDevice) {
+        $btnSaveDevice.textContent = "Saved!";
+        setTimeout(function () { $btnSaveDevice.textContent = "Save to Device"; }, 2000);
+      }
+    }
   }
 
   function handleSerialData(data) {
@@ -2441,13 +2587,9 @@
     releaseAllActive();
 
     var prevVoice = state.selectedVoice;
-    if (hwZone && prevVoice) {
+    if (prevVoice) {
       voiceStateMgr.snapshot(prevVoice, {
-        params: state.paramValues,
-        layout: hwZone.getState().layout,
-        bindings: hwZone.getState().bindings,
-        gpioAssignments: hwZone.getState().gpioAssignments,
-        zoneMinHeight: hwZone._minHeight
+        params: state.paramValues
       });
     }
 
@@ -2455,15 +2597,14 @@
     voiceStateMgr.setActive(voiceKey);
 
     var restored = voiceStateMgr.restore(voiceKey);
-    if (restored) {
+    if (restored && restored.params) {
       state.paramValues = restored.params;
-      if (hwZone) hwZone.restoreLayout(restored);
     } else {
       initParamValues(voiceKey);
-      if (hwZone) hwZone.clear();
     }
 
     renderParamPanel();
+    if (hwZone) hwZone.refreshParamSelectors();
 
     if (audioInitDone) {
       browserVoice = createBrowserVoice(voiceKey);
@@ -2544,6 +2685,7 @@
         state.workspaceState = zoneState;
         updatePinout();
         scheduleCodeUpdate();
+        syncPaletteToZone();
       },
       getVoiceParams: function () {
         var def = VOICES[state.selectedVoice];
@@ -2566,6 +2708,52 @@
           keys.push({ index: i, label: noteNameForIndex(i) });
         }
         return keys;
+      },
+      onKeyPress: function (noteIndex) {
+        ensureAudioInit().then(function () {
+          handleKeyPress(noteIndex);
+        });
+      },
+      onKeyRelease: function (noteIndex) {
+        handleKeyRelease(noteIndex);
+      },
+      getControlValue: function (name) {
+        if (name === "scale") return state.currentScale || ($scaleSelect ? $scaleSelect.value : "pentatonic_major");
+        if (name === "tonality") return state.tonality || "major";
+        if (name === "arp_pattern") return state.arpPattern || ($arpPattern ? $arpPattern.value : "up");
+        if (name === "arp_speed") return state.arpSpeed || ($arpSpeed ? parseInt($arpSpeed.value, 10) : 120);
+        if (name === "latch") return state.latchMode || false;
+        if (name === "arp") return state.arpEnabled || false;
+        if (name === "loop") return state.loopMode || false;
+        return null;
+      },
+      setControlValue: function (name, val) {
+        if (name === "scale") {
+          state.currentScale = val;
+          if ($scaleSelect) $scaleSelect.value = val;
+          if ($scaleSelect) $scaleSelect.dispatchEvent(new Event("change"));
+        } else if (name === "tonality") {
+          state.tonality = val;
+          var tonBtn = document.getElementById("btn-tonality");
+          if (tonBtn) tonBtn.textContent = val === "minor" ? "Minor" : "Major";
+        } else if (name === "arp_pattern") {
+          state.arpPattern = val;
+          if ($arpPattern) { $arpPattern.value = val; $arpPattern.dispatchEvent(new Event("change")); }
+        } else if (name === "arp_speed") {
+          state.arpSpeed = val;
+          if ($arpSpeed) { $arpSpeed.value = val; }
+          if ($arpSpeedVal) { $arpSpeedVal.textContent = val; }
+        } else if (name === "latch") {
+          state.latchMode = !!val;
+          if ($latchToggle) { $latchToggle.checked = state.latchMode; $latchToggle.dispatchEvent(new Event("change")); }
+        } else if (name === "arp") {
+          state.arpEnabled = !!val;
+          if ($arpToggle) { $arpToggle.checked = state.arpEnabled; $arpToggle.dispatchEvent(new Event("change")); }
+        } else if (name === "loop") {
+          state.loopMode = !!val;
+          if ($loopToggle) { $loopToggle.checked = state.loopMode; $loopToggle.dispatchEvent(new Event("change")); }
+        }
+        scheduleCodeUpdate();
       }
     });
     hwZone.init('hw-zone-container');
@@ -2582,7 +2770,6 @@
 
     // Wire up controls
     initBoardSelector();
-    initWavToggle();
     initLatchControls();
     initHardwareCheckboxes();
     initOctaveControls();
@@ -2605,14 +2792,6 @@
 
     // Serial
     initSerial();
-
-    // Handle WAV note visibility
-    if ($onboarding && $wavToggle) {
-      var wavNote = $onboarding.querySelector(".note");
-      if (wavNote) {
-        wavNote.style.display = state.useWav ? "block" : "none";
-      }
-    }
   }
 
   // Run on DOM ready
