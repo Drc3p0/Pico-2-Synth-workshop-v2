@@ -218,6 +218,8 @@ class InputManager:
         self.mpr121 = None
         self.accelerometer = None
         self._activity = False
+        self._accel_smooth_x = 0.0
+        self._accel_smooth_y = 0.0
 
         # Initialize buttons
         button_pin_names = config.get("button_pins", self.BUTTON_PINS)
@@ -327,13 +329,33 @@ class InputManager:
         return set()
 
     def get_accel(self):
-        """Return (x, y) normalized -1.0 to 1.0, or (0.0, 0.0) if unavailable."""
-        if self.accelerometer:
-            x, y = self.accelerometer.get_xy_normalized()
-            if abs(x) > 0.05 or abs(y) > 0.05:
-                self._activity = True
-            return x, y
-        return 0.0, 0.0
+        """Return (x, y) normalized -1.0 to 1.0 with dead zone and smoothing applied."""
+        if not self.accelerometer:
+            return 0.0, 0.0
+
+        x, y = self.accelerometer.get_xy_normalized()
+
+        dead_pct = self.config.get("accel_dead_zone", 5) / 100.0
+        smooth_pct = self.config.get("accel_smoothing", 25) / 100.0
+        alpha = 1.0 - smooth_pct
+
+        if abs(x) < dead_pct:
+            x = 0.0
+        else:
+            x = (x - (1.0 if x > 0 else -1.0) * dead_pct) / (1.0 - dead_pct)
+
+        if abs(y) < dead_pct:
+            y = 0.0
+        else:
+            y = (y - (1.0 if y > 0 else -1.0) * dead_pct) / (1.0 - dead_pct)
+
+        self._accel_smooth_x += (x - self._accel_smooth_x) * alpha
+        self._accel_smooth_y += (y - self._accel_smooth_y) * alpha
+
+        if abs(self._accel_smooth_x) > 0.05 or abs(self._accel_smooth_y) > 0.05:
+            self._activity = True
+
+        return self._accel_smooth_x, self._accel_smooth_y
 
     def any_activity(self):
         """Return True if any input was active since last call, then reset."""

@@ -203,6 +203,7 @@
   var bindingResolver = new BindingResolver(bus);
   var serialAdapter = new SerialAdapter(bus);
   var hwZone = null;
+  var handleMonitorData;
 
   // Arpeggiator runtime
   var arpIntervalId = null;
@@ -2454,6 +2455,8 @@
     var hasMpr121 = false;
     var hasOled = false;
     var touchPins = [];
+    var accelDeadZone = 5;
+    var accelSmoothing = 25;
     if (hwZone) {
       var conns = hwZone.getActiveConnections();
       hasAccel = !!conns.accelerometer;
@@ -2469,6 +2472,10 @@
             }
           }
         }
+        if (ti.hwType === "accel" && ti.config) {
+          accelDeadZone = ti.config.deadZone !== undefined ? ti.config.deadZone : 5;
+          accelSmoothing = ti.config.smoothing !== undefined ? ti.config.smoothing : 25;
+        }
       }
     }
 
@@ -2481,6 +2488,8 @@
       mpr121_enabled: hasMpr121,
       mpr121_boards: 1,
       accelerometer_enabled: hasAccel,
+      accel_dead_zone: accelDeadZone,
+      accel_smoothing: accelSmoothing,
       oled_enabled: hasOled,
       use_wav: true,
       effects_enabled: false,
@@ -2527,7 +2536,7 @@
     }
   }
 
-  function handleMonitorData(data) {
+  handleMonitorData = function(data) {
     if (!hwZone) return;
 
     for (var id in hwZone.items) {
@@ -2540,14 +2549,32 @@
           var def2 = params2[item.paramName] || {};
           var aMin = def2.min !== undefined ? def2.min : 0;
           var aMax = def2.max !== undefined ? def2.max : 1023;
-          var xNorm = (data.accel[0] + 1.0) / 2.0;
-          var yNorm = (data.accel[1] + 1.0) / 2.0;
+
+          var cfg = item.config || {};
+          var deadPct = (cfg.deadZone || 0) / 100.0;
+          var smoothAlpha = 1.0 - (cfg.smoothing || 0) / 100.0;
+
+          var rawX = data.accel[0];
+          var rawY = data.accel[1];
+
+          if (Math.abs(rawX) < deadPct) rawX = 0;
+          else rawX = (rawX - Math.sign(rawX) * deadPct) / (1.0 - deadPct);
+          if (Math.abs(rawY) < deadPct) rawY = 0;
+          else rawY = (rawY - Math.sign(rawY) * deadPct) / (1.0 - deadPct);
+
+          if (item._smoothX === undefined) { item._smoothX = rawX; item._smoothY = rawY; }
+          item._smoothX += (rawX - item._smoothX) * smoothAlpha;
+          item._smoothY += (rawY - item._smoothY) * smoothAlpha;
+
+          var xNorm = (item._smoothX + 1.0) / 2.0;
+          var yNorm = (item._smoothY + 1.0) / 2.0;
+          xNorm = Math.max(0, Math.min(1, xNorm));
+          yNorm = Math.max(0, Math.min(1, yNorm));
+
           var mappedX = aMin + xNorm * (aMax - aMin);
+          var mappedY = aMin + yNorm * (aMax - aMin);
           if (item._potX && item._potX.setValueSilent) item._potX.setValueSilent(mappedX);
-          if (item._potY && item._potY.setValueSilent) {
-            var mappedY = aMin + yNorm * (aMax - aMin);
-            item._potY.setValueSilent(mappedY);
-          }
+          if (item._potY && item._potY.setValueSilent) item._potY.setValueSilent(mappedY);
           if (item._pot && item._pot.setValueSilent) item._pot.setValueSilent(mappedX);
           if (item.paramName) {
             state.paramValues[item.paramName] = mappedX;

@@ -347,9 +347,11 @@
 
     if (item.hwType) {
       hwSelect.value = item.hwType;
+      item.el = el;
       this._populateGPIO(gpioSelect, item);
       this._updateItemVisual(item);
     } else if (item.kind === "control") {
+      item.el = el;
       this._updateItemVisual(item);
     }
 
@@ -672,6 +674,10 @@
     var max = def.max !== undefined ? def.max : 1023;
     var val = this.getParamValue(item.paramName) || def.default || min;
 
+    if (!item.config) item.config = {};
+    if (item.config.deadZone === undefined) item.config.deadZone = 5;
+    if (item.config.smoothing === undefined) item.config.smoothing = 25;
+
     var row = document.createElement("div");
     row.style.cssText = "display:flex;gap:8px;align-items:center";
 
@@ -719,7 +725,61 @@
     row.appendChild(yCol);
     body.appendChild(row);
 
+    var filterRow = document.createElement("div");
+    filterRow.style.cssText = "display:flex;flex-direction:column;gap:4px;width:100%;margin-top:6px;font-size:0.6rem;color:var(--ws-text-dim)";
+
+    var dzRow = document.createElement("div");
+    dzRow.style.cssText = "display:flex;align-items:center;gap:6px";
+    var dzLabel = document.createElement("span");
+    dzLabel.textContent = "Dead Zone";
+    dzLabel.style.minWidth = "60px";
+    var dzSlider = document.createElement("input");
+    dzSlider.type = "range";
+    dzSlider.min = "0";
+    dzSlider.max = "50";
+    dzSlider.value = String(item.config.deadZone);
+    dzSlider.style.cssText = "flex:1;height:14px;accent-color:#8B5CF6";
+    var dzVal = document.createElement("span");
+    dzVal.style.minWidth = "20px";
+    dzVal.textContent = item.config.deadZone + "%";
+    dzSlider.addEventListener("input", function () {
+      item.config.deadZone = parseInt(dzSlider.value, 10);
+      dzVal.textContent = dzSlider.value + "%";
+      self._fireChange();
+    });
+    dzRow.appendChild(dzLabel);
+    dzRow.appendChild(dzSlider);
+    dzRow.appendChild(dzVal);
+
+    var smRow = document.createElement("div");
+    smRow.style.cssText = "display:flex;align-items:center;gap:6px";
+    var smLabel = document.createElement("span");
+    smLabel.textContent = "Smoothing";
+    smLabel.style.minWidth = "60px";
+    var smSlider = document.createElement("input");
+    smSlider.type = "range";
+    smSlider.min = "0";
+    smSlider.max = "100";
+    smSlider.value = String(item.config.smoothing);
+    smSlider.style.cssText = "flex:1;height:14px;accent-color:#14B8A6";
+    var smVal = document.createElement("span");
+    smVal.style.minWidth = "20px";
+    smVal.textContent = item.config.smoothing + "%";
+    smSlider.addEventListener("input", function () {
+      item.config.smoothing = parseInt(smSlider.value, 10);
+      smVal.textContent = smSlider.value + "%";
+      self._fireChange();
+    });
+    smRow.appendChild(smLabel);
+    smRow.appendChild(smSlider);
+    smRow.appendChild(smVal);
+
+    filterRow.appendChild(dzRow);
+    filterRow.appendChild(smRow);
+    body.appendChild(filterRow);
+
     item._pot = potX;
+    item._potX = potX;
     item._potY = potY;
   };
 
