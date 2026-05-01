@@ -50,17 +50,44 @@
           </li>
         </ol>
         <div class="board-wiring-note" id="board-wiring-note">
-          <h3>Wiring Note for Your Board</h3>
-          <div id="wiring-note-pico2">
-            <p><strong>Pico 2 (RP2350):</strong> Uses internal <strong>pull-down</strong> resistors. Wire buttons between the GPIO pin and <strong>3V3</strong>.</p>
-            <div class="wiring-diagram"><pre>    <span class="pin-label">GP0-GP7</span> ----[ Button ]---- <span class="pin-label">3V3</span>
-                  (pull-down enabled in software)</pre></div>
-          </div>
-          <div id="wiring-note-pico" style="display:none">
-            <p><strong>Pico (RP2040):</strong> Uses internal <strong>pull-up</strong> resistors. Wire buttons between the GPIO pin and <strong>GND</strong>.</p>
-            <div class="wiring-diagram"><pre>    <span class="pin-label">GP0-GP7</span> ----[ Button ]---- <span class="pin-label">GND</span>
-                  (pull-up enabled in software)</pre></div>
-          </div>
+          <h3>Wiring Reference</h3>
+          <table style="font-size:0.75rem;border-collapse:collapse;width:100%;margin:8px 0">
+            <tr style="border-bottom:1px solid var(--ws-border)">
+              <th style="text-align:left;padding:4px">Input</th>
+              <th style="text-align:left;padding:4px">Pins</th>
+              <th style="text-align:left;padding:4px">Wiring</th>
+            </tr>
+            <tr style="border-bottom:1px solid var(--ws-border)">
+              <td style="padding:4px">Button</td>
+              <td style="padding:4px">GP0-GP22</td>
+              <td style="padding:4px">Switch between <strong>GPIO</strong> and <strong>GND</strong> (internal pull-up, no resistor needed)</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--ws-border)">
+              <td style="padding:4px">Touch (GPIO)</td>
+              <td style="padding:4px">GP0-GP22</td>
+              <td style="padding:4px">Conductive pad (copper tape, foil, wire) connected to <strong>GPIO only</strong> (capacitive sensing via <code>touchio</code>)</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--ws-border)">
+              <td style="padding:4px">Touch (MPR121)</td>
+              <td style="padding:4px">I2C GP16/GP17</td>
+              <td style="padding:4px">MPR121 breakout via I2C; up to 12 touch channels per board</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--ws-border)">
+              <td style="padding:4px">Pot / LDR</td>
+              <td style="padding:4px">GP26, GP27, GP28</td>
+              <td style="padding:4px">Pot: outer legs to <strong>3V3</strong> + <strong>GND</strong>, wiper to ADC pin. LDR: voltage divider with 10k resistor.</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--ws-border)">
+              <td style="padding:4px">Accelerometer</td>
+              <td style="padding:4px">I2C GP16/GP17</td>
+              <td style="padding:4px">LIS3DH or MPU6050 module; SDA/SCL to GP16/GP17, VCC to 3V3</td>
+            </tr>
+            <tr>
+              <td style="padding:4px">Audio Out</td>
+              <td style="padding:4px">GP15</td>
+              <td style="padding:4px">PWM audio; connect to speaker/amp via RC filter</td>
+            </tr>
+          </table>
         </div>
       </div>
     </details>
