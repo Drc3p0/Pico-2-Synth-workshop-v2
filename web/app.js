@@ -2534,7 +2534,6 @@
       var item = hwZone.items[id];
       if (!item.hwType) continue;
 
-      // Accelerometer is I2C, no GPIO — handle separately
       if (item.hwType === "accel") {
         if (data.accel && Array.isArray(data.accel) && data.accel.length >= 2) {
           var params2 = hwZone.getVoiceParams();
@@ -2544,15 +2543,17 @@
           var xNorm = (data.accel[0] + 1.0) / 2.0;
           var yNorm = (data.accel[1] + 1.0) / 2.0;
           var mappedX = aMin + xNorm * (aMax - aMin);
-          if (item._potX) item._potX.setValue(mappedX);
-          if (item._potY) {
+          if (item._potX && item._potX.setValueSilent) item._potX.setValueSilent(mappedX);
+          if (item._potY && item._potY.setValueSilent) {
             var mappedY = aMin + yNorm * (aMax - aMin);
-            item._potY.setValue(mappedY);
+            item._potY.setValueSilent(mappedY);
           }
-          if (item._pot) item._pot.setValue(mappedX);
+          if (item._pot && item._pot.setValueSilent) item._pot.setValueSilent(mappedX);
           if (item.paramName) {
-            hwZone.setParamValue(item.paramName, mappedX);
-            bus.publish("param:" + item.paramName, mappedX);
+            state.paramValues[item.paramName] = mappedX;
+            if (browserVoice && typeof browserVoice.setParam === 'function') {
+              browserVoice.setParam(item.paramName, mappedX);
+            }
           }
         }
         continue;
@@ -2569,7 +2570,6 @@
 
         if (item.hwType === "button") {
           if (data.btn && Array.isArray(data.btn)) {
-            // Match by pin number: btn[0]=GP0, btn[1]=GP1, etc.
             var btnIdx = pinNum;
             if (btnIdx >= 0 && btnIdx < data.btn.length) {
               var pressed = data.btn[btnIdx] === 1;
@@ -2588,12 +2588,16 @@
                   item[devKey] = false;
                 }
               }
+              if (item.kind === "param" && item.paramName) {
+                state.paramValues[item.paramName] = pressed ? 1 : 0;
+                if (browserVoice && typeof browserVoice.setParam === 'function') {
+                  browserVoice.setParam(item.paramName, pressed ? 1 : 0);
+                }
+              }
             }
           }
         } else if (item.hwType === "touch_native") {
           if (data.touch_gpio && Array.isArray(data.touch_gpio)) {
-            // touch_gpio array is ordered by touch_pins in config
-            // Build ordered list from zone items to find index
             var touchPins = [];
             for (var zid in hwZone.items) {
               var zi = hwZone.items[zid];
@@ -2647,10 +2651,15 @@
               var pMin = def.min !== undefined ? def.min : 0;
               var pMax = def.max !== undefined ? def.max : 1023;
               var mapped = pMin + (rawVal / 65535) * (pMax - pMin);
-              if (item._pot) item._pot.setValue(mapped);
+              if (item._pot && item._pot.setValueSilent) item._pot.setValueSilent(mapped);
               if (item.paramName) {
-                hwZone.setParamValue(item.paramName, mapped);
-                bus.publish("param:" + item.paramName, mapped);
+                state.paramValues[item.paramName] = mapped;
+                if (palettePots[item.paramName] && palettePots[item.paramName].setValueSilent) {
+                  palettePots[item.paramName].setValueSilent(mapped);
+                }
+                if (browserVoice && typeof browserVoice.setParam === 'function') {
+                  browserVoice.setParam(item.paramName, mapped);
+                }
               }
             }
           }
@@ -2850,15 +2859,12 @@
         return state.paramValues[name];
       },
       setParamValue: function (name, val) {
-        if (state._settingParam) return;
-        state._settingParam = true;
         state.paramValues[name] = val;
         if (palettePots[name]) palettePots[name].setValue(val);
         if (browserVoice && typeof browserVoice.setParam === 'function') {
           browserVoice.setParam(name, val);
         }
         scheduleCodeUpdate();
-        state._settingParam = false;
       },
       getScaleKeys: function () {
         var keys = [];

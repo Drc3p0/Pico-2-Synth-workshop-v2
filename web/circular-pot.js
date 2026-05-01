@@ -101,6 +101,11 @@
     this._knob.setValue(this._toInternal(val));
   };
 
+  CircularPot.prototype.setValueSilent = function (val) {
+    this.value = val;
+    this._knob.setValueFloating(this._toInternal(val));
+  };
+
   CircularPot.prototype.setColor = function (color) {
     this.color = color;
     this._knob.setProperty('colorFG', color);
