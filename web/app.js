@@ -2408,6 +2408,11 @@
         }
       }
     });
+
+    PicoSerial.onData(function (data) {
+      if (!data || data._raw || data.resp) return;
+      if (data.mon) handleMonitorData(data);
+    });
   }
 
   function buildDeviceConfig() {
@@ -2505,7 +2510,102 @@
     }
   }
 
+  function handleMonitorData(data) {
+    if (!hwZone) return;
+
+    for (var id in hwZone.items) {
+      var item = hwZone.items[id];
+      if (!item.hwType || !item.gpio) continue;
+
+      var gpio = Array.isArray(item.gpio) ? item.gpio : [item.gpio];
+
+      for (var gi = 0; gi < gpio.length; gi++) {
+        var pin = gpio[gi];
+        if (!pin) continue;
+        var pinNum = parseInt(pin.replace("GP", "").replace("CH", ""), 10);
+
+        if (item.hwType === "button" || item.hwType === "touch_native") {
+          if (data.btn && Array.isArray(data.btn)) {
+            var btnIdx = data.btn_pins ? data.btn_pins.indexOf(pinNum) : -1;
+            if (btnIdx === -1) {
+              for (var bi = 0; bi < data.btn.length; bi++) {
+                if (bi === gi || data.btn.length === 1) { btnIdx = bi; break; }
+              }
+            }
+            if (btnIdx >= 0 && btnIdx < data.btn.length) {
+              var pressed = data.btn[btnIdx] === 1;
+              var btnEl = item.el ? item.el.querySelector(".hw-visual-button, .hw-visual-touch") : null;
+              if (btnEl) {
+                if (pressed) {
+                  btnEl.classList.add("hw-btn-pressed", "hw-touch-active");
+                } else {
+                  btnEl.classList.remove("hw-btn-pressed", "hw-touch-active");
+                }
+              }
+              if (item.kind === "key" || item.kind === "keys") {
+                var keyIdx = gi < 11 ? gi : 0;
+                if (pressed && !item._devPressed) {
+                  handleKeyPress(keyIdx);
+                  item._devPressed = true;
+                } else if (!pressed && item._devPressed) {
+                  handleKeyRelease(keyIdx);
+                  item._devPressed = false;
+                }
+              }
+            }
+          }
+        } else if (item.hwType === "touch_mpr121") {
+          if (data.touch && Array.isArray(data.touch)) {
+            var chIdx = pinNum;
+            if (chIdx < data.touch.length) {
+              var tActive = data.touch[chIdx] === 1;
+              var tEl = item.el ? item.el.querySelector(".hw-visual-touch") : null;
+              if (tEl) {
+                if (tActive) tEl.classList.add("hw-touch-active");
+                else tEl.classList.remove("hw-touch-active");
+              }
+            }
+          }
+        } else if (item.hwType === "pot" || item.hwType === "ldr") {
+          if (data.pot && Array.isArray(data.pot)) {
+            var adcIdx = pinNum === 26 ? 0 : (pinNum === 27 ? 1 : (pinNum === 28 ? 2 : -1));
+            if (adcIdx >= 0 && adcIdx < data.pot.length) {
+              var rawVal = data.pot[adcIdx];
+              var params = hwZone.getVoiceParams();
+              var def = params[item.paramName] || {};
+              var pMin = def.min !== undefined ? def.min : 0;
+              var pMax = def.max !== undefined ? def.max : 1023;
+              var mapped = pMin + (rawVal / 65535) * (pMax - pMin);
+              if (item._pot) item._pot.setValue(mapped);
+              if (item.paramName) {
+                hwZone.setParamValue(item.paramName, mapped);
+                bus.publish("param:" + item.paramName, mapped);
+              }
+            }
+          }
+        } else if (item.hwType === "accel") {
+          if (data.accel && Array.isArray(data.accel) && data.accel.length >= 2) {
+            var params2 = hwZone.getVoiceParams();
+            var def2 = params2[item.paramName] || {};
+            var aMin = def2.min !== undefined ? def2.min : 0;
+            var aMax = def2.max !== undefined ? def2.max : 1023;
+            var xNorm = (data.accel[0] + 1.0) / 2.0;
+            var mappedX = aMin + xNorm * (aMax - aMin);
+            if (item._pot) item._pot.setValue(mappedX);
+            if (item.paramName) {
+              hwZone.setParamValue(item.paramName, mappedX);
+              bus.publish("param:" + item.paramName, mappedX);
+            }
+          }
+        }
+
+        break;
+      }
+    }
+  }
+
   function handleSerialData(data) {
+    if (data.mon) { handleMonitorData(data); return; }
      // Expected: {"btn":[0,1,0,0],"pot":[512,1023,0],"accel":[0.1,-0.3],"touch":[1,0,0,1,...]}
 
      // Pots (handle dynamic pot tracking)
