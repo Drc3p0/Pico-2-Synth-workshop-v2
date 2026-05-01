@@ -2453,17 +2453,30 @@
     var hasAccel = false;
     var hasMpr121 = false;
     var hasOled = false;
+    var touchPins = [];
     if (hwZone) {
       var conns = hwZone.getActiveConnections();
       hasAccel = !!conns.accelerometer;
       hasMpr121 = !!conns.mpr121;
       hasOled = !!conns.oled;
+      for (var tid in hwZone.items) {
+        var ti = hwZone.items[tid];
+        if (ti.hwType === "touch_native" && ti.gpio) {
+          var gpios = Array.isArray(ti.gpio) ? ti.gpio : [ti.gpio];
+          for (var tg = 0; tg < gpios.length; tg++) {
+            if (gpios[tg] && touchPins.indexOf(gpios[tg]) === -1) {
+              touchPins.push(gpios[tg]);
+            }
+          }
+        }
+      }
     }
 
     return {
       voice: voiceKey,
       self_play: false,
       input_map: inputMap,
+      touch_pins: touchPins,
       extended_buttons: false,
       mpr121_enabled: hasMpr121,
       mpr121_boards: 1,
@@ -2524,33 +2537,49 @@
         if (!pin) continue;
         var pinNum = parseInt(pin.replace("GP", "").replace("CH", ""), 10);
 
-        if (item.hwType === "button" || item.hwType === "touch_native") {
+        if (item.hwType === "button") {
           if (data.btn && Array.isArray(data.btn)) {
-            var btnIdx = data.btn_pins ? data.btn_pins.indexOf(pinNum) : -1;
-            if (btnIdx === -1) {
-              for (var bi = 0; bi < data.btn.length; bi++) {
-                if (bi === gi || data.btn.length === 1) { btnIdx = bi; break; }
+            var btnEl = item.el ? item.el.querySelector(".hw-visual-button") : null;
+            for (var bi = 0; bi < data.btn.length; bi++) {
+              if (bi === gi) {
+                var pressed = data.btn[bi] === 1;
+                if (btnEl) {
+                  if (pressed) btnEl.classList.add("hw-btn-pressed");
+                  else btnEl.classList.remove("hw-btn-pressed");
+                }
+                if (item.kind === "key" || item.kind === "keys") {
+                  if (pressed && !item._devPressed) {
+                    handleKeyPress(gi);
+                    item._devPressed = true;
+                  } else if (!pressed && item._devPressed) {
+                    handleKeyRelease(gi);
+                    item._devPressed = false;
+                  }
+                }
+                break;
               }
             }
-            if (btnIdx >= 0 && btnIdx < data.btn.length) {
-              var pressed = data.btn[btnIdx] === 1;
-              var btnEl = item.el ? item.el.querySelector(".hw-visual-button, .hw-visual-touch") : null;
-              if (btnEl) {
-                if (pressed) {
-                  btnEl.classList.add("hw-btn-pressed", "hw-touch-active");
-                } else {
-                  btnEl.classList.remove("hw-btn-pressed", "hw-touch-active");
+          }
+        } else if (item.hwType === "touch_native") {
+          if (data.touch_gpio && Array.isArray(data.touch_gpio)) {
+            var tEl = item.el ? item.el.querySelector(".hw-visual-touch") : null;
+            for (var ti = 0; ti < data.touch_gpio.length; ti++) {
+              if (ti === gi) {
+                var tActive = data.touch_gpio[ti] === 1;
+                if (tEl) {
+                  if (tActive) tEl.classList.add("hw-touch-active");
+                  else tEl.classList.remove("hw-touch-active");
                 }
-              }
-              if (item.kind === "key" || item.kind === "keys") {
-                var keyIdx = gi < 11 ? gi : 0;
-                if (pressed && !item._devPressed) {
-                  handleKeyPress(keyIdx);
-                  item._devPressed = true;
-                } else if (!pressed && item._devPressed) {
-                  handleKeyRelease(keyIdx);
-                  item._devPressed = false;
+                if (item.kind === "key" || item.kind === "keys") {
+                  if (tActive && !item._devPressed) {
+                    handleKeyPress(gi);
+                    item._devPressed = true;
+                  } else if (!tActive && item._devPressed) {
+                    handleKeyRelease(gi);
+                    item._devPressed = false;
+                  }
                 }
+                break;
               }
             }
           }

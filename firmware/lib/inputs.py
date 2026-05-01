@@ -16,6 +16,11 @@ try:
 except ImportError:
     keypad = None
 
+try:
+    import touchio
+except ImportError:
+    touchio = None
+
 
 def _clamp(value, minimum, maximum):
     if value < minimum:
@@ -133,6 +138,61 @@ class ButtonManager:
                 pass
 
 
+class TouchManager:
+    """Manages native GPIO capacitive touch inputs via touchio.TouchIn."""
+
+    def __init__(self, pin_names):
+        self._pads = []
+        self._prev = []
+        self.available = False
+        self.count = 0
+
+        if touchio is None or board is None or not pin_names:
+            return
+
+        for name in pin_names:
+            pin = getattr(board, name, None)
+            if pin is None:
+                continue
+            try:
+                pad = touchio.TouchIn(pin)
+                self._pads.append(pad)
+                self._prev.append(False)
+                self.count += 1
+            except Exception:
+                pass
+
+        self.available = self.count > 0
+
+    def check(self):
+        events = []
+        for i in range(len(self._pads)):
+            try:
+                val = self._pads[i].value
+            except Exception:
+                val = False
+            if val != self._prev[i]:
+                events.append((i, val))
+                self._prev[i] = val
+        return events
+
+    def get_states(self):
+        states = []
+        for i in range(len(self._pads)):
+            try:
+                states.append(1 if self._pads[i].value else 0)
+            except Exception:
+                states.append(0)
+        return states
+
+    def deinit(self):
+        for pad in self._pads:
+            try:
+                pad.deinit()
+            except Exception:
+                pass
+
+
 class InputManager:
     """Unified input manager — creates and manages all physical inputs."""
 
@@ -151,6 +211,7 @@ class InputManager:
 
         self.config = config
         self.buttons = None
+        self.touch_native = None
         self.analogs = []
         self.mpr121 = None
         self.accelerometer = None
@@ -171,6 +232,10 @@ class InputManager:
             value_when_pressed=False,
             pull=True,
         )
+
+        touch_pin_names = config.get("touch_pins", [])
+        if touch_pin_names:
+            self.touch_native = TouchManager(touch_pin_names)
 
         # Initialize analog inputs (pots, LDRs)
         analog_pin_names = config.get("analog_pins", self.ANALOG_PINS)
@@ -228,6 +293,34 @@ class InputManager:
                 self._activity = True
             return events
         return []
+
+    def get_touch_events(self):
+        """Return list of (pad_index, is_touched) events from native GPIO touch."""
+        if self.touch_native:
+            events = self.touch_native.check()
+            if events:
+                self._activity = True
+            return events
+        return []
+
+    def get_touch_states(self):
+        """Return list of 0/1 states for native GPIO touch pads."""
+        if self.touch_native:
+            return self.touch_native.get_states()
+        return []
+
+    def get_button_states(self):
+        """Return list of 0/1 states for buttons (for monitoring)."""
+        if not self.buttons or not self.buttons.available:
+            return []
+        states = []
+        if self.buttons._keys:
+            for i in range(self.buttons.count):
+                try:
+                    states.append(1 if self.buttons._keys[i] else 0)
+                except Exception:
+                    states.append(0)
+        return states
 
     def get_mpr121_touched(self):
         """Return set of currently touched MPR121 channel numbers."""

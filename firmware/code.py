@@ -169,7 +169,6 @@ def handle_command(line, config, voice, synth, inputs, oled):
 def build_monitor(config, inputs):
     mon = {"mon": True}
 
-    # Pots / ADC
     pot_vals = []
     for i in range(len(inputs.analogs)):
         a = inputs.analogs[i]
@@ -180,14 +179,12 @@ def build_monitor(config, inputs):
     if pot_vals:
         mon["pot"] = pot_vals
 
-    # Buttons
     if inputs.buttons and inputs.buttons.available:
-        btn_states = []
-        for i in range(inputs.buttons.count):
-            btn_states.append(0)
-        mon["btn"] = btn_states
+        mon["btn"] = inputs.get_button_states()
 
-    # Touch
+    if inputs.touch_native and inputs.touch_native.available:
+        mon["touch_gpio"] = inputs.get_touch_states()
+
     if inputs.mpr121:
         touched = inputs.get_mpr121_touched()
         num_ch = config.get("mpr121_boards", 1) * 12
@@ -196,7 +193,6 @@ def build_monitor(config, inputs):
             touch_states.append(1 if i in touched else 0)
         mon["touch"] = touch_states
 
-    # Accelerometer
     if inputs.accelerometer:
         x, y = inputs.get_accel()
         mon["accel"] = [round(x, 3), round(y, 3)]
@@ -221,6 +217,8 @@ def _get_input_value(source_name, inputs):
         ch = int(source_name.split("_")[1])
         touched = inputs.get_mpr121_touched()
         return 1.0 if ch in touched else 0.0
+    elif source_name.startswith("touch_"):
+        return None
     elif source_name.startswith("button_"):
         return None
     return None
@@ -349,6 +347,21 @@ while True:
                     voice.note_on(midi_note)
                 else:
                     voice.note_off(midi_note)
+
+    # --- Native GPIO Touch Events ---
+    for t_idx, touched in inputs.get_touch_events():
+        led.pulse()
+        touch_source = "touch_{}".format(t_idx)
+        for param_name, source in input_map.items():
+            if source == touch_source:
+                if touched:
+                    voice.set_param(param_name, 1)
+        if touch_source not in input_map.values():
+            midi_note = 48 + t_idx
+            if touched:
+                voice.note_on(midi_note)
+            else:
+                voice.note_off(midi_note)
 
     # --- Continuous Inputs ---
     for param_name, source in input_map.items():
