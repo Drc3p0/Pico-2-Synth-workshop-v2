@@ -487,6 +487,11 @@
 
 			const mouseMoveListener = function(e) {
 				if (knob._mousebutton) {
+					if (e.buttons === 0) {
+						knob.commit();
+						knob._mousebutton = false;
+						return;
+					}
 					const properties = knob._properties;
 					if (!properties.readonly) {
 						e.preventDefault();
@@ -504,14 +509,14 @@
 					const properties = knob._properties;
 					if (!properties.readonly) {
 						e.preventDefault();
-						knob.setValue(mouseEventToValue(e, properties));
+						knob.commit();
 					}
 				}
 				knob._mousebutton = false;
 			};
 
 			const mouseCancelListener = function(e) {
-				if (knob._mousebutton) {
+				if (knob._mousebutton && !e.buttons) {
 					knob.abort();
 					knob._mousebutton = false;
 				}
@@ -624,9 +629,9 @@
 
 			canvas.addEventListener('dblclick', doubleClickListener);
 			canvas.addEventListener('mousedown', mouseDownListener);
+			document.addEventListener('mousemove', mouseMoveListener);
+			document.addEventListener('mouseup', mouseUpListener);
 			canvas.addEventListener('mouseleave', mouseCancelListener);
-			canvas.addEventListener('mousemove', mouseMoveListener);
-			canvas.addEventListener('mouseup', mouseUpListener);
 			canvas.addEventListener('resize', resizeListener);
 			canvas.addEventListener('touchstart', touchStartListener);
 			canvas.addEventListener('touchmove', touchMoveListener);
