@@ -2504,6 +2504,10 @@
     if (deviceConfig) {
       console.log("Loaded config from device");
     }
+
+    var config = buildDeviceConfig();
+    await PicoSerial.putConfig(config);
+    console.log("Pushed zone config to device");
   }
 
   async function saveConfigToDevice() {
@@ -2523,19 +2527,8 @@
     }
   }
 
-  var _monDbgCount = 0;
   function handleMonitorData(data) {
     if (!hwZone) return;
-
-    if (_monDbgCount++ % 40 === 0) {
-      var itemSummary = [];
-      for (var dbgId in hwZone.items) {
-        var dbgIt = hwZone.items[dbgId];
-        itemSummary.push({id: dbgId, hwType: dbgIt.hwType, gpio: dbgIt.gpio, kind: dbgIt.kind});
-      }
-      console.log("[MON] data keys:", Object.keys(data), "btn:", data.btn, "accel:", data.accel);
-      console.log("[MON] zone items:", JSON.stringify(itemSummary));
-    }
 
     for (var id in hwZone.items) {
       var item = hwZone.items[id];
@@ -2857,12 +2850,15 @@
         return state.paramValues[name];
       },
       setParamValue: function (name, val) {
+        if (state._settingParam) return;
+        state._settingParam = true;
         state.paramValues[name] = val;
         if (palettePots[name]) palettePots[name].setValue(val);
         if (browserVoice && typeof browserVoice.setParam === 'function') {
           browserVoice.setParam(name, val);
         }
         scheduleCodeUpdate();
+        state._settingParam = false;
       },
       getScaleKeys: function () {
         var keys = [];
