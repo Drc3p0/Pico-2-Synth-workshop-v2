@@ -72,7 +72,7 @@ class SmoothedAnalog:
     def cc_value(self):
         return _clamp((self.value & 0xFF00) >> 9, 0, 127)
 
-    def changed(self, threshold=0.03):
+    def changed(self, threshold=0.05):
         old = self._last_reported
         current = self.normalized
         if abs(current - old) > threshold:
@@ -357,7 +357,7 @@ class InputManager:
 
         dx = abs(self._accel_smooth_x - prev_x)
         dy = abs(self._accel_smooth_y - prev_y)
-        if dx > 0.03 or dy > 0.03:
+        if dx > 0.08 or dy > 0.08:
             self._activity = True
 
         return self._accel_smooth_x, self._accel_smooth_y
