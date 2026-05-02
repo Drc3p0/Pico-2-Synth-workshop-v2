@@ -122,6 +122,9 @@ def handle_command(line, config, voice, synth, inputs, oled):
             config.get("mpr121_enabled"),
             config.get("mpr121_boards"),
             config.get("accelerometer_enabled"),
+            tuple(config.get("button_pins", ())),
+            tuple(config.get("analog_pins", ())),
+            tuple(config.get("touch_pins", ())),
         )
         config.update(new_data)
 
@@ -130,6 +133,9 @@ def handle_command(line, config, voice, synth, inputs, oled):
             config.get("mpr121_enabled"),
             config.get("mpr121_boards"),
             config.get("accelerometer_enabled"),
+            tuple(config.get("button_pins", ())),
+            tuple(config.get("analog_pins", ())),
+            tuple(config.get("touch_pins", ())),
         )
 
         # Rebuild inputs if hardware config changed
