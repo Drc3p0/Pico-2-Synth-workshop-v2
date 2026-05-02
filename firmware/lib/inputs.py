@@ -233,8 +233,8 @@ class InputManager:
 
         self.buttons = ButtonManager(
             tuple(button_pins),
-            value_when_pressed=False,
-            pull=True,
+            value_when_pressed=True,
+            pull=False,
         )
 
         touch_pin_names = config.get("touch_pins", [])
