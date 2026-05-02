@@ -1,0 +1,17 @@
+{
+  "voice": "eighties_dystopia",
+  "self_play": true,
+  "input_map": {},
+  "button_pins": [],
+  "analog_pins": [],
+  "touch_pins": [],
+  "extended_buttons": false,
+  "mpr121_enabled": false,
+  "mpr121_boards": 1,
+  "accelerometer_enabled": false,
+  "accel_dead_zone": 5,
+  "accel_smoothing": 25,
+  "oled_enabled": false,
+  "sample_rate": 28000,
+  "audio_pin": "GP15"
+}

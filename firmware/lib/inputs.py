@@ -200,9 +200,9 @@ class InputManager:
     """Unified input manager — creates and manages all physical inputs."""
 
     # Default pin assignments
-    BUTTON_PINS = ("GP0", "GP1", "GP2", "GP3")
+    BUTTON_PINS = ()
     BUTTON_PINS_EXTENDED = ("GP4", "GP5", "GP6", "GP7")
-    ANALOG_PINS = ("GP26", "GP27", "GP28")
+    ANALOG_PINS = ()
     I2C_SDA = "GP16"
     I2C_SCL = "GP17"
     AUDIO_PIN = "GP15"
