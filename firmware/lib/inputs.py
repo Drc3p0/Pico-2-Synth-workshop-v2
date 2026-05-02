@@ -224,6 +224,8 @@ class InputManager:
 
         # Initialize buttons
         button_pin_names = config.get("button_pins", self.BUTTON_PINS)
+        if not button_pin_names:
+            button_pin_names = []
         if config.get("extended_buttons", False):
             button_pin_names = list(button_pin_names) + list(self.BUTTON_PINS_EXTENDED)
 
@@ -244,6 +246,8 @@ class InputManager:
 
         # Initialize analog inputs (pots, LDRs)
         analog_pin_names = config.get("analog_pins", self.ANALOG_PINS)
+        if not analog_pin_names:
+            analog_pin_names = []
         for name in analog_pin_names:
             pin = getattr(board, name, None) if board else None
             if pin is not None:

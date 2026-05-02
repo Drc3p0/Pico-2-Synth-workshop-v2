@@ -2468,6 +2468,8 @@
     var hasMpr121 = false;
     var hasOled = false;
     var touchPins = [];
+    var buttonPins = [];
+    var analogPins = [];
     var accelDeadZone = 5;
     var accelSmoothing = 25;
     if (hwZone) {
@@ -2480,10 +2482,20 @@
         if (ti.hwType === "touch_native" && ti.gpio) {
           var gpios = Array.isArray(ti.gpio) ? ti.gpio : [ti.gpio];
           for (var tg = 0; tg < gpios.length; tg++) {
-            if (gpios[tg] && touchPins.indexOf(gpios[tg]) === -1) {
+            if (gpios[tg] && touchPins.indexOf(gpios[tg]) === -1)
               touchPins.push(gpios[tg]);
-            }
           }
+        }
+        if (ti.hwType === "button" && ti.gpio) {
+          var bGpios = Array.isArray(ti.gpio) ? ti.gpio : [ti.gpio];
+          for (var bg = 0; bg < bGpios.length; bg++) {
+            if (bGpios[bg] && buttonPins.indexOf(bGpios[bg]) === -1)
+              buttonPins.push(bGpios[bg]);
+          }
+        }
+        if ((ti.hwType === "pot" || ti.hwType === "ldr") && ti.gpio) {
+          if (analogPins.indexOf(ti.gpio) === -1)
+            analogPins.push(ti.gpio);
         }
         if (ti.hwType === "accel" && ti.config) {
           accelDeadZone = ti.config.deadZone !== undefined ? ti.config.deadZone : 5;
@@ -2497,6 +2509,8 @@
       self_play: false,
       input_map: inputMap,
       touch_pins: touchPins,
+      button_pins: buttonPins,
+      analog_pins: analogPins,
       extended_buttons: false,
       mpr121_enabled: hasMpr121,
       mpr121_boards: 1,
