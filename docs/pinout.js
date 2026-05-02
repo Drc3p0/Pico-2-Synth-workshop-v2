@@ -146,19 +146,24 @@
       }
     }
 
-    // I2C GP16 (SDA) / GP17 (SCL)
+    // I2C GP16 (SDA) / GP17 (SCL) - OLED + MPR121
     if ((num === 16 || num === 17) && active.i2c) {
       var role = num === 16 ? "SDA" : "SCL";
       var devices = [];
       if (active.oled) devices.push("OLED");
       if (active.mpr121) devices.push("MPR121");
-      if (active.accelerometer) devices.push("Accel");
       var devStr = devices.length ? " (" + devices.join(", ") + ")" : "";
       return { color: COLORS.i2c, label: "I2C " + role + devStr };
     }
 
-    // Audio PWM GP15
-    if (num === 15 && active.audio) {
+    // I2C GP14 (SDA) / GP15 (SCL) - Accelerometer
+    if ((num === 14 || num === 15) && active.accelerometer) {
+      var accelRole = num === 14 ? "SDA" : "SCL";
+      return { color: COLORS.i2c, label: "I2C " + accelRole + " (Accel)" };
+    }
+
+    // Audio PWM GP13
+    if (num === 13 && active.audio) {
       return { color: COLORS.audio, label: "Speaker" };
     }
 

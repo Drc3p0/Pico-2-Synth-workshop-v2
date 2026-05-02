@@ -2418,7 +2418,13 @@
       if (!data || data._raw || data.resp) return;
       if (data.mon) {
         handleMonitorData(data);
-        if (data.act && $inputActivity) {
+        var hasActivity = !!data.act;
+        if (!hasActivity && data.btn) {
+          for (var bi = 0; bi < data.btn.length; bi++) {
+            if (data.btn[bi]) { hasActivity = true; break; }
+          }
+        }
+        if (hasActivity && $inputActivity) {
           $inputActivity.classList.add("active");
           clearTimeout(_activityTimer);
           _activityTimer = setTimeout(function () {
