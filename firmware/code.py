@@ -45,7 +45,7 @@ DEFAULT_CONFIG = {
     "reverb_mix": 0.0,
     "distortion_mix": 0.0,
     "sample_rate": 28000,
-    "audio_pin": "GP15",
+    "audio_pin": "GP13",
 }
 
 # ============================================================================
@@ -268,7 +268,7 @@ def _init_oled(config, inputs):
 CONFIG = load_config()
 
 SAMPLE_RATE = CONFIG.get("sample_rate", 28000)
-audio_pin = getattr(board, CONFIG.get("audio_pin", "GP15"))
+audio_pin = getattr(board, CONFIG.get("audio_pin", "GP13"))
 audio = audiopwmio.PWMAudioOut(audio_pin)
 
 mixer = audiomixer.Mixer(channel_count=1, sample_rate=SAMPLE_RATE, buffer_size=4096)

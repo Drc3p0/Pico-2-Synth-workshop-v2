@@ -205,7 +205,9 @@ class InputManager:
     ANALOG_PINS = ()
     I2C_SDA = "GP16"
     I2C_SCL = "GP17"
-    AUDIO_PIN = "GP15"
+    ACCEL_SDA = "GP14"
+    ACCEL_SCL = "GP15"
+    AUDIO_PIN = "GP13"
     LED_PIN = "GP25"
 
     def __init__(self, config=None):
@@ -258,35 +260,36 @@ class InputManager:
         # I2C devices initialized separately via init_i2c()
 
     def init_i2c(self):
-        """Initialize I2C bus and optional devices (MPR121, accelerometer)."""
+        """Initialize I2C buses and optional devices."""
+        import busio
+
+        # I2C0: OLED + MPR121 on GP16/GP17
         try:
-            import busio
             sda = getattr(board, self.I2C_SDA, None)
             scl = getattr(board, self.I2C_SCL, None)
-            if sda is None or scl is None:
-                return None
-            i2c = busio.I2C(scl=scl, sda=sda)
-
-            # Try MPR121
-            if self.config.get("mpr121_enabled", False):
-                try:
-                    from lib.mpr121_input import MPR121Input
-                    num_boards = self.config.get("mpr121_boards", 1)
-                    self.mpr121 = MPR121Input(i2c, num_boards=num_boards)
-                except Exception:
-                    self.mpr121 = None
-
-            # Try accelerometer
-            if self.config.get("accelerometer_enabled", False):
-                try:
-                    from lib.accel_input import AccelInput
-                    self.accelerometer = AccelInput(i2c)
-                except Exception:
-                    self.accelerometer = None
-
-            return i2c
+            if sda and scl:
+                i2c0 = busio.I2C(scl=scl, sda=sda)
+                if self.config.get("mpr121_enabled", False):
+                    try:
+                        from lib.mpr121_input import MPR121Input
+                        num_boards = self.config.get("mpr121_boards", 1)
+                        self.mpr121 = MPR121Input(i2c0, num_boards=num_boards)
+                    except Exception:
+                        self.mpr121 = None
         except Exception:
-            return None
+            pass
+
+        # I2C1: Accelerometer on GP14/GP15
+        if self.config.get("accelerometer_enabled", False):
+            try:
+                accel_sda = getattr(board, self.ACCEL_SDA, None)
+                accel_scl = getattr(board, self.ACCEL_SCL, None)
+                if accel_sda and accel_scl:
+                    i2c1 = busio.I2C(scl=accel_scl, sda=accel_sda)
+                    from lib.accel_input import AccelInput
+                    self.accelerometer = AccelInput(i2c1)
+            except Exception:
+                self.accelerometer = None
 
     def get_analog(self, index):
         """Get normalized value (0.0-1.0) for analog input at index."""

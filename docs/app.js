@@ -1872,7 +1872,7 @@
     // Audio
     lines.push('    # ---- Audio ----');
     lines.push('    "sample_rate": 28000,');
-    lines.push('    "audio_pin": "GP15",');
+    lines.push('    "audio_pin": "GP13",');
     lines.push("}");
     lines.push("");
     lines.push("");
@@ -1895,7 +1895,7 @@
     lines.push("");
     lines.push("# --- Audio Setup ---");
     lines.push('SAMPLE_RATE = CONFIG.get("sample_rate", 28000)');
-    lines.push('audio_pin = getattr(board, CONFIG.get("audio_pin", "GP15"))');
+    lines.push('audio_pin = getattr(board, CONFIG.get("audio_pin", "GP13"))');
     lines.push("audio = audiopwmio.PWMAudioOut(audio_pin)");
     lines.push("");
     lines.push("mixer = audiomixer.Mixer(channel_count=1, sample_rate=SAMPLE_RATE, buffer_size=4096)");
@@ -2168,7 +2168,7 @@
       },
       audio: {
         sample_rate: 28000,
-        audio_pin: "GP15"
+        audio_pin: "GP13"
       },
       workspace: state.workspaceState || { params: {}, keys: {} }
     };
@@ -2521,7 +2521,7 @@
       use_wav: true,
       effects_enabled: false,
       sample_rate: 28000,
-      audio_pin: "GP15"
+      audio_pin: "GP13"
     };
   }
 

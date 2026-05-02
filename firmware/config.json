@@ -13,5 +13,5 @@
   "accel_smoothing": 25,
   "oled_enabled": false,
   "sample_rate": 28000,
-  "audio_pin": "GP15"
+  "audio_pin": "GP13"
 }

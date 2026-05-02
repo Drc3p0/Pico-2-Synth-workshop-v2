@@ -79,12 +79,12 @@
             </tr>
             <tr style="border-bottom:1px solid var(--ws-border)">
               <td style="padding:4px">Accelerometer</td>
-              <td style="padding:4px">I2C GP16/GP17</td>
-              <td style="padding:4px">LIS3DH or MPU6050 module; SDA/SCL to GP16/GP17, VCC to 3V3</td>
+<td style="padding:4px">I2C GP14/GP15</td>
+          <td style="padding:4px">LIS3DH or MPU6050 module; SDA/SCL to GP14/GP15, VCC to 3V3</td>
             </tr>
             <tr>
               <td style="padding:4px">Audio Out</td>
-              <td style="padding:4px">GP15</td>
+              <td style="padding:4px">GP13</td>
               <td style="padding:4px">PWM audio; connect to speaker/amp via RC filter</td>
             </tr>
           </table>
@@ -246,15 +246,15 @@
         <p>Voltage divider with LDR and 10k&#937; resistor. LDR to 3V3, junction to ADC pin, resistor to GND.</p>
         <h3>MPR121 Capacitive Touch</h3>
         <p>I2C on GP16 (SDA) / GP17 (SCL). 12 touch channels per board. Address 0x5A default.</p>
-        <h3>Accelerometer (LIS3DH)</h3>
-        <p>I2C on GP16/GP17. Provides X, Y, Z acceleration for tilt and motion control.</p>
+<h3>Accelerometer (LIS3DH)</h3>
+          <p>I2C on GP14 (SDA) / GP15 (SCL). Provides X, Y, Z acceleration for tilt and motion control.</p>
         <h3>OLED Display (SSD1306)</h3>
         <p>128x64 I2C display on GP16/GP17. Address 0x3C.</p>
         <h3>Speaker (PWM Audio)</h3>
-        <p>PWM on GP15 through RC low-pass filter (1k&#937; + 100nF) to speaker.</p>
+        <p>PWM on GP13 through RC low-pass filter (1k&#937; + 100nF) to speaker.</p>
         <h3>Pin Summary</h3>
         <div class="wiring-diagram"><pre>  Buttons: GP0-GP7 (8 max) | Analog: GP26-28 (3 max)
-  I2C: GP16/17 (shared)    | Audio: GP15    | LED: GP25</pre></div>
+  I2C (OLED/MPR121): GP16/17 | I2C (Accel): GP14/15 | Audio: GP13 | LED: GP25</pre></div>
       </div>
     </details>
 
