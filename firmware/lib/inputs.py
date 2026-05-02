@@ -38,13 +38,14 @@ class SmoothedAnalog:
         self._adc = None
         self.available = False
         self._smoothed = 0.0
-        self._last_reported = -1.0
+        self._last_reported = 0.0
 
         try:
             if analogio is None:
                 raise RuntimeError("analogio unavailable")
             self._adc = analogio.AnalogIn(pin)
             self._smoothed = float(self._adc.value)
+            self._last_reported = self._smoothed / 65535.0
             self.available = True
         except Exception:
             self._adc = None
@@ -349,10 +350,14 @@ class InputManager:
         else:
             y = (y - (1.0 if y > 0 else -1.0) * dead_pct) / (1.0 - dead_pct)
 
+        prev_x = self._accel_smooth_x
+        prev_y = self._accel_smooth_y
         self._accel_smooth_x += (x - self._accel_smooth_x) * alpha
         self._accel_smooth_y += (y - self._accel_smooth_y) * alpha
 
-        if abs(self._accel_smooth_x) > 0.05 or abs(self._accel_smooth_y) > 0.05:
+        dx = abs(self._accel_smooth_x - prev_x)
+        dy = abs(self._accel_smooth_y - prev_y)
+        if dx > 0.03 or dy > 0.03:
             self._activity = True
 
         return self._accel_smooth_x, self._accel_smooth_y
