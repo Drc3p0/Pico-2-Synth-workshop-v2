@@ -243,6 +243,8 @@
     var $btnConnectPico  = $("btn-connect");
     var $btnSaveDevice   = $("btn-save-device");
     var $serialStatus    = $("serial-status");
+  var $inputActivity   = $("input-activity");
+  var _activityTimer   = null;
     var $onboarding      = $("onboarding");
     var $boardSelect     = $("board-select");
     var $boardHint       = $("board-hint");
@@ -2403,16 +2405,27 @@
         if (info.connected) {
           $btnConnectPico.textContent = "Disconnect";
           if ($btnSaveDevice) $btnSaveDevice.style.display = "";
+          if ($inputActivity) $inputActivity.classList.add("visible");
         } else {
           $btnConnectPico.textContent = "Connect";
           if ($btnSaveDevice) $btnSaveDevice.style.display = "none";
+          if ($inputActivity) { $inputActivity.classList.remove("visible"); $inputActivity.classList.remove("active"); }
         }
       }
     });
 
     PicoSerial.onData(function (data) {
       if (!data || data._raw || data.resp) return;
-      if (data.mon) handleMonitorData(data);
+      if (data.mon) {
+        handleMonitorData(data);
+        if (data.act && $inputActivity) {
+          $inputActivity.classList.add("active");
+          clearTimeout(_activityTimer);
+          _activityTimer = setTimeout(function () {
+            if ($inputActivity) $inputActivity.classList.remove("active");
+          }, 200);
+        }
+      }
     });
   }
 

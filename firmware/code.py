@@ -300,6 +300,7 @@ print("Pico 2 Synth Workshop v2 (generic firmware)")
 print("Voice: " + voice.name)
 
 _loop_count = 0
+_mon_activity = False
 
 while True:
     # --- Serial Commands ---
@@ -314,6 +315,7 @@ while True:
     input_map = CONFIG.get("input_map", {})
     for btn_idx, pressed in inputs.get_button_events():
         led.pulse()
+        _mon_activity = True
         btn_source = "button_{}".format(btn_idx)
         for param_name, source in input_map.items():
             if source == btn_source:
@@ -336,6 +338,7 @@ while True:
     if inputs.mpr121:
         for ch, pressed in inputs.mpr121.get_events():
             led.pulse()
+            _mon_activity = True
             touch_source = "mpr121_{}".format(ch)
             for param_name, source in input_map.items():
                 if source == touch_source:
@@ -351,6 +354,7 @@ while True:
     # --- Native GPIO Touch Events ---
     for t_idx, touched in inputs.get_touch_events():
         led.pulse()
+        _mon_activity = True
         touch_source = "touch_{}".format(t_idx)
         for param_name, source in input_map.items():
             if source == touch_source:
@@ -377,6 +381,7 @@ while True:
     # --- LED ---
     if inputs.any_activity():
         led.pulse()
+        _mon_activity = True
     led.update()
 
     # --- Voice ---
@@ -391,7 +396,11 @@ while True:
     if _loop_count >= 10:
         _loop_count = 0
         try:
-            serial_send(build_monitor(CONFIG, inputs))
+            mon = build_monitor(CONFIG, inputs)
+            if _mon_activity:
+                mon["act"] = 1
+                _mon_activity = False
+            serial_send(mon)
         except Exception:
             pass
 

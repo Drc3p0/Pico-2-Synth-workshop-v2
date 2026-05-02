@@ -38,6 +38,24 @@
   background: var(--ws-danger);
 }
 
+.input-activity-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #333;
+  display: none;
+  transition: background 0.1s, box-shadow 0.1s;
+}
+
+.input-activity-dot.visible {
+  display: inline-block;
+}
+
+.input-activity-dot.active {
+  background: #14B8A6;
+  box-shadow: 0 0 8px #14B8A6;
+}
+
 @keyframes pulse-dot {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.3; }

@@ -33,11 +33,12 @@ def _clamp(value, minimum, maximum):
 class SmoothedAnalog:
     """ADC input with exponential moving average smoothing."""
 
-    def __init__(self, pin, alpha=0.15):
+    def __init__(self, pin, alpha=0.08):
         self.alpha = _clamp(alpha, 0.01, 1.0)
         self._adc = None
         self.available = False
         self._smoothed = 0.0
+        self._last_reported = -1.0
 
         try:
             if analogio is None:
@@ -70,9 +71,8 @@ class SmoothedAnalog:
     def cc_value(self):
         return _clamp((self.value & 0xFF00) >> 9, 0, 127)
 
-    def changed(self, threshold=0.01):
-        """Return True if normalized value changed more than threshold since last check."""
-        old = self._last_reported if hasattr(self, "_last_reported") else -1.0
+    def changed(self, threshold=0.03):
+        old = self._last_reported
         current = self.normalized
         if abs(current - old) > threshold:
             self._last_reported = current
@@ -246,7 +246,7 @@ class InputManager:
         for name in analog_pin_names:
             pin = getattr(board, name, None) if board else None
             if pin is not None:
-                self.analogs.append(SmoothedAnalog(pin, alpha=0.15))
+                self.analogs.append(SmoothedAnalog(pin, alpha=0.08))
             else:
                 self.analogs.append(None)
 
