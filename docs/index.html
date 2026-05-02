@@ -26,7 +26,7 @@
             <option value="pico">Raspberry Pi Pico (RP2040)</option>
           </select>
           <p class="board-hint" id="board-hint">
-            RP2350 - Uses internal pull-down resistors. Buttons wire to 3V3.
+            RP2350 - Uses internal pull-up resistors. Buttons wire to GND.
           </p>
         </div>
         <ol class="setup-steps">
@@ -235,9 +235,9 @@
       <summary>Wiring Guide</summary>
       <div class="wiring-guide">
         <h3>Buttons</h3>
-        <p id="btn-wiring-desc-pico2">Connect momentary push buttons between a GPIO pin and <strong>3V3</strong>. Internal pull-down resistors are enabled in software (RP2350), so no external resistors are needed.</p>
-        <p id="btn-wiring-desc-pico" style="display:none">Connect momentary push buttons between a GPIO pin and <strong>GND</strong>. Internal pull-up resistors are enabled in software (RP2040), so no external resistors are needed.</p>
-        <div class="wiring-diagram" id="btn-wiring-diag-pico2"><pre>    <span class="pin-label">GP0-GP7</span> ----[ Button ]---- <span class="pin-label">3V3</span></pre></div>
+<p id="btn-wiring-desc-pico2">Connect momentary push buttons between a GPIO pin and <strong>GND</strong>. Internal pull-up resistors are enabled in software (RP2350), so no external resistors are needed.</p>
+          <p id="btn-wiring-desc-pico" style="display:none">Connect momentary push buttons between a GPIO pin and <strong>GND</strong>. Internal pull-up resistors are enabled in software (RP2040), so no external resistors are needed.</p>
+          <div class="wiring-diagram" id="btn-wiring-diag-pico2"><pre>    <span class="pin-label">GP0-GP7</span> ----[ Button ]---- <span class="pin-label">GND</span></pre></div>
         <div class="wiring-diagram" id="btn-wiring-diag-pico" style="display:none"><pre>    <span class="pin-label">GP0-GP7</span> ----[ Button ]---- <span class="pin-label">GND</span></pre></div>
         <h3>Potentiometers</h3>
         <p>Connect 10k&#937; pots with outer legs to 3V3 and GND, wiper to GP26/GP27/GP28.</p>
