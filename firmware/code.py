@@ -186,7 +186,16 @@ def build_monitor(config, inputs):
         mon["pot"] = pot_vals
 
     if inputs.buttons and inputs.buttons.available:
-        mon["btn"] = inputs.get_button_states()
+        btn_pin_names = CONFIG.get("button_pins", InputManager.BUTTON_PINS)
+        if not btn_pin_names:
+            btn_pin_names = []
+        btn_states = inputs.get_button_states()
+        full_btn = [0] * 8
+        for i, name in enumerate(btn_pin_names):
+            pin_num = int(name.replace("GP", ""))
+            if i < len(btn_states):
+                full_btn[pin_num] = btn_states[i]
+        mon["btn"] = full_btn
 
     if inputs.touch_native and inputs.touch_native.available:
         mon["touch_gpio"] = inputs.get_touch_states()
@@ -294,6 +303,11 @@ if CONFIG.get("oled_enabled", False) and i2c:
 
 # --- LED ---
 led = LEDIndicator()
+led.pulse()
+import time
+time.sleep(0.5)
+led.update()
+time.sleep(0.2)
 
 # --- Voice ---
 voice = load_voice(CONFIG.get("voice", "eighties_dystopia"), synth, CONFIG)
@@ -302,7 +316,10 @@ voice = load_voice(CONFIG.get("voice", "eighties_dystopia"), synth, CONFIG)
 # Main Loop
 # ============================================================================
 
-print("Pico 2 Synth Workshop v2 (generic firmware)")
+print("Pico 2 Synth Workshop v2.1 (generic firmware)")
+print("Button pins:", CONFIG.get("button_pins", InputManager.BUTTON_PINS))
+print("Button mode: value_when_pressed=True, pull=False (3V3 + 10K pulldown)")
+print("Analog pins:", CONFIG.get("analog_pins", InputManager.ANALOG_PINS))
 print("Voice: " + voice.name)
 
 _loop_count = 0
