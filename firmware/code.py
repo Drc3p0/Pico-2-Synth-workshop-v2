@@ -165,6 +165,7 @@ def handle_command(line, config, voice, synth, inputs, oled):
         serial_send({"resp": "error", "msg": "unknown cmd"})
 
     if need_rebuild:
+        inputs.deinit()
         inputs = InputManager(config)
         inputs.init_i2c()
         oled = _init_oled(config, inputs)

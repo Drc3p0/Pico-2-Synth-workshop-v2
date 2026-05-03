@@ -1965,15 +1965,9 @@
     lines.push('    # ---- Hardware Options ----');
     lines.push('    "mpr121_enabled": ' + (state.hardwareOptions.mpr121_enabled ? "True" : "False") + ',');
     lines.push('    "accelerometer_enabled": ' + (state.hardwareOptions.accelerometer_enabled ? "True" : "False") + ',');
-    if (genButtonPins.length) {
-      lines.push('    "button_pins": ' + JSON.stringify(genButtonPins) + ',');
-    }
-    if (genAnalogPins.length) {
-      lines.push('    "analog_pins": ' + JSON.stringify(genAnalogPins) + ',');
-    }
-    if (genTouchPins.length) {
-      lines.push('    "touch_pins": ' + JSON.stringify(genTouchPins) + ',');
-    }
+    lines.push('    "button_pins": ' + JSON.stringify(genButtonPins) + ',');
+    lines.push('    "analog_pins": ' + JSON.stringify(genAnalogPins) + ',');
+    lines.push('    "touch_pins": ' + JSON.stringify(genTouchPins) + ',');
     lines.push("");
 
     // Audio
@@ -3109,6 +3103,7 @@
     hwZone._syncingParam = false;
     window._hwZone = hwZone;
     window._appState = state;
+    window._buildDeviceConfig = buildDeviceConfig;
 
     initControlsPromotion();
     initWaveformDrag();

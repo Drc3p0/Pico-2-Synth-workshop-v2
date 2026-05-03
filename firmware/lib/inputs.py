@@ -259,6 +259,22 @@ class InputManager:
 
         # I2C devices initialized separately via init_i2c()
 
+    def deinit(self):
+        """Release all hardware resources so pins can be reused."""
+        if self.buttons:
+            self.buttons.deinit()
+        for analog in self.analogs:
+            if analog:
+                analog.deinit()
+        self.analogs = []
+        if self.touch_native:
+            self.touch_native.deinit()
+            self.touch_native = None
+        if self.mpr121:
+            self.mpr121 = None
+        if self.accel:
+            self.accel = None
+
     def init_i2c(self):
         """Initialize I2C buses and optional devices."""
         import busio
