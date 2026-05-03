@@ -356,10 +356,20 @@ while True:
     # --- Button Events ---
     input_map = CONFIG.get("input_map", {})
     key_map = CONFIG.get("key_map", {})
+    btn_pin_names = CONFIG.get("button_pins", InputManager.BUTTON_PINS)
+    if not btn_pin_names:
+        btn_pin_names = []
     for btn_idx, pressed in inputs.get_button_events():  # GPIO button press/release events
         led.pulse()
         _mon_activity = True
-        btn_source = "button_{}".format(btn_idx)
+        # Convert array index back to GPIO pin number for source name lookup.
+        # btn_idx is a 0-based keypad.Keys index; the web config uses pin numbers
+        # (e.g. "button_5" for GP5), so we must resolve via the pin list.
+        if btn_idx < len(btn_pin_names):
+            pin_num = btn_pin_names[btn_idx].replace("GP", "")
+        else:
+            pin_num = str(btn_idx)
+        btn_source = "button_{}".format(pin_num)
         # Check if this button maps to a voice parameter (e.g., trigger, effect toggle)
         for param_name, source in input_map.items():
             if source == btn_source:
@@ -413,10 +423,15 @@ while True:
                     voice.note_off(midi_note)
 
     # --- Native GPIO Touch Events ---
-    for t_idx, touched in inputs.get_touch_events():  # Pico built-in capacitive GPIO (GP2-4)
+    touch_pin_names = CONFIG.get("touch_pins", [])
+    for t_idx, touched in inputs.get_touch_events():
         led.pulse()
         _mon_activity = True
-        touch_source = "touch_{}".format(t_idx)
+        if t_idx < len(touch_pin_names):
+            t_pin_num = touch_pin_names[t_idx].replace("GP", "")
+        else:
+            t_pin_num = str(t_idx)
+        touch_source = "touch_{}".format(t_pin_num)
         # Check if touch GPIO maps to a voice parameter
         for param_name, source in input_map.items():
             if source == touch_source:
