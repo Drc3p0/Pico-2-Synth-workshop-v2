@@ -75,6 +75,8 @@ class Voice:
     description = "Morphing wavetables with opposing LFOs — endless falling"
 
     def __init__(self, synth, config=None):
+        # Synthesis technique: Two voices with opposite pitch-bend LFOs 
+        # (one bends down, one bends up) create illusion of perpetual falling
         self.synth = synth
         cfg = dict(DEFAULTS)
         if config:
@@ -128,7 +130,7 @@ class Voice:
         wA = table[idx]
         wB = table[min(idx + 1, len(table) - 1)]
         for i in range(WAVE_LEN):
-            waveform[i] = int(wA[i] * (1 - frac) + wB[i] * frac)
+            waveform[i] = int(wA[i] * (1 - frac) + wB[i] * frac)  # Linear interpolation for smooth morphing
 
     def get_params(self):
         return dict(PARAMS)
@@ -167,16 +169,16 @@ class Voice:
         # Scan through wavetables (bounce at ends)
         self._scan_pos += self.scan_speed * self._scan_dir
         if self._scan_pos <= 0 or self._scan_pos >= NUM_WAVES - 1:
-            self._scan_dir = -self._scan_dir
+            self._scan_dir = -self._scan_dir  # Reverse direction when hitting wavetable bounds
 
         self._set_wave_pos(self._table_a, self._waveform_a, self._scan_pos)
-        self._set_wave_pos(self._table_b, self._waveform_b, self._scan_pos / 3)
+        self._set_wave_pos(self._table_b, self._waveform_b, self._scan_pos / 3)  # Different scan speed per table
 
         # Retrigger pitch bend LFOs when they complete
         try:
             if self.plfo1.phase > 0.99:
                 self.plfo1.retrigger()
-                self.plfo2.retrigger()
+                self.plfo2.retrigger()  # Restart opposing pitch bends in sync
         except Exception:
             pass
 

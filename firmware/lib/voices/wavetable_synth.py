@@ -71,6 +71,8 @@ class Voice:
     description = "A MIDI synth using morphing wavetables"
 
     def __init__(self, synth, config=None):
+        # Synthesis technique: LFO scans through a bank of wavetables (generated via additive synthesis),
+        # morphing smoothly between them in real-time to create evolving timbres
         self.synth = synth
         cfg = dict(DEFAULTS)
         if config:
@@ -120,7 +122,7 @@ class Voice:
         waveA = self._wavetable[idx]
         waveB = self._wavetable[min(idx + 1, NUM_WAVES - 1)]
 
-        # Linear interpolation between waves
+        # Linear interpolation between adjacent wavetable entries for smooth morphing
         for i in range(WAVE_LEN):
             self._current_waveform[i] = int(waveA[i] * (1 - frac) + waveB[i] * frac)
 

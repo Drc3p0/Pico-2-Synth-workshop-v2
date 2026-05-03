@@ -39,6 +39,8 @@ class Voice:
     description = "An arpeggio explorer for non-musicians"
 
     def __init__(self, synth, config=None):
+        # Synthesis technique: Detuned oscillators per note with key-tracking filter 
+        # (filter frequency follows played note pitch) and arpeggiator pattern sequencing
         self.synth = synth
         cfg = dict(DEFAULTS)
         if config:
@@ -73,8 +75,8 @@ class Voice:
         fo = synthio.midi_to_hz(midi_note)
         self.voices.clear()
         for i in range(self.num_voices):
-            f = fo * (1 + i * 0.007)
-            lpf_f = fo * 8  # key tracking
+            f = fo * (1 + i * 0.007)  # Detuning: each voice slightly higher frequency
+            lpf_f = fo * 8  # Key-tracking: filter frequency scales with played note
             try:
                 lpf = self.synth.low_pass_filter(lpf_f, self.lpf_resonance)
             except Exception:

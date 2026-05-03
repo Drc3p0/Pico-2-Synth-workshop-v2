@@ -330,7 +330,7 @@ _mon_activity = False
 
 while True:
     # --- Serial Commands ---
-    line = serial_check()
+    line = serial_check()  # Check for incoming WebSerial config updates
     if line is not None:
         CONFIG, voice, inputs, oled, _ = handle_command(
             line, CONFIG, voice, synth, inputs, oled
@@ -339,21 +339,23 @@ while True:
 
     # --- Button Events ---
     input_map = CONFIG.get("input_map", {})
-    for btn_idx, pressed in inputs.get_button_events():
+    for btn_idx, pressed in inputs.get_button_events():  # GPIO button press/release events
         led.pulse()
         _mon_activity = True
         btn_source = "button_{}".format(btn_idx)
+        # Check if this button maps to a voice parameter (e.g., trigger, effect toggle)
         for param_name, source in input_map.items():
             if source == btn_source:
                 param_info = voice.get_params().get(param_name, {})
-                if param_info.get("type") == "trigger" and pressed:
+                if param_info.get("type") == "trigger" and pressed:  # Only trigger on button down
                     voice.set_param(param_name, 1)
                     if oled:
                         oled.toggle_verbose(param_name)
                         oled.show_input(param_name, "ON")
 
+        # If button is unmapped, use as playable keyboard (C major scale starting at MIDI 48)
         if btn_source not in input_map.values():
-            scale = [0, 4, 7, 12, -5, -12, 5, 9]
+            scale = [0, 4, 7, 12, -5, -12, 5, 9]  # C major intervals in semitones
             midi_note = 48 + (scale[btn_idx % len(scale)])
             if pressed:
                 voice.note_on(midi_note)
@@ -361,15 +363,17 @@ while True:
                 voice.note_off(midi_note)
 
     # --- MPR121 Touch Events ---
-    if inputs.mpr121:
+    if inputs.mpr121:  # Capacitive touch pads (I2C MPR121 chip)
         for ch, pressed in inputs.mpr121.get_events():
             led.pulse()
             _mon_activity = True
             touch_source = "mpr121_{}".format(ch)
+            # Check if touch pad maps to a voice parameter
             for param_name, source in input_map.items():
                 if source == touch_source:
                     if pressed:
                         voice.set_param(param_name, 1)
+            # If unmapped, use as keyboard keyboard starting at MIDI 48
             if touch_source not in input_map.values():
                 midi_note = 48 + ch
                 if pressed:
@@ -378,14 +382,16 @@ while True:
                     voice.note_off(midi_note)
 
     # --- Native GPIO Touch Events ---
-    for t_idx, touched in inputs.get_touch_events():
+    for t_idx, touched in inputs.get_touch_events():  # Pico built-in capacitive GPIO (GP2-4)
         led.pulse()
         _mon_activity = True
         touch_source = "touch_{}".format(t_idx)
+        # Check if touch GPIO maps to a voice parameter
         for param_name, source in input_map.items():
             if source == touch_source:
                 if touched:
                     voice.set_param(param_name, 1)
+        # If unmapped, use as playable keyboard
         if touch_source not in input_map.values():
             midi_note = 48 + t_idx
             if touched:
@@ -394,40 +400,40 @@ while True:
                 voice.note_off(midi_note)
 
     # --- Continuous Inputs ---
-    for param_name, source in input_map.items():
-        val = _get_input_value(source, inputs)
+    for param_name, source in input_map.items():  # Map analog/accelerometer to voice parameters
+        val = _get_input_value(source, inputs)  # Normalized 0.0-1.0
         if val is not None:
             param_info = voice.get_params().get(param_name, {})
-            if param_info.get("type") == "continuous":
+            if param_info.get("type") == "continuous":  # Parameter accepts continuous values
                 p_min = param_info.get("min", 0)
                 p_max = param_info.get("max", 1)
-                mapped = map_range(val, 0.0, 1.0, p_min, p_max)
+                mapped = map_range(val, 0.0, 1.0, p_min, p_max)  # Scale to param range
                 voice.set_param(param_name, mapped)
 
     # --- LED ---
-    if inputs.any_activity():
+    if inputs.any_activity():  # Pulse LED on any input activity for visual feedback
         led.pulse()
         _mon_activity = True
     led.update()
 
     # --- Voice ---
-    voice.update()
+    voice.update()  # Update voice state (LFOs, wavetable scans, self-play sequencing)
 
     # --- OLED ---
     if oled:
-        oled.update()
+        oled.update()  # Update display state
 
     # --- Monitoring (every ~50ms = every 10 loops) ---
     _loop_count += 1
-    if _loop_count >= 10:
+    if _loop_count >= 10:  # Send sensor telemetry every ~50ms (10 x 5ms)
         _loop_count = 0
         try:
-            mon = build_monitor(CONFIG, inputs)
+            mon = build_monitor(CONFIG, inputs)  # Collect current state (buttons, pots, touch)
             if _mon_activity:
-                mon["act"] = 1
+                mon["act"] = 1  # Mark frame with activity
                 _mon_activity = False
-            serial_send(mon)
+            serial_send(mon)  # Send via WebSerial for browser UI
         except Exception:
             pass
 
-    time.sleep(0.005)
+    time.sleep(0.005)  # ~200Hz update rate

@@ -1,3 +1,5 @@
 
 build/
 pico2-synth-bundle.zip
+firmware/__pycache__/
+firmware/lib/voices/__pycache__/

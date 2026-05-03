@@ -38,6 +38,8 @@ class Voice:
     description = "A simple generative piece using only LFOs"
 
     def __init__(self, synth, config=None):
+        # Synthesis technique: Four fixed-pitch voices with amplitude modulation (tremolo) 
+        # driven by LFOs at different rates, creating evolving texture without envelope generators
         self.synth = synth
         cfg = dict(DEFAULTS)
         if config:
@@ -85,7 +87,7 @@ class Voice:
             lfo = self.lfos[i] if i < len(self.lfos) else self.lfos[-1]
             note = synthio.Note(
                 synthio.midi_to_hz(midi_note + interval),
-                amplitude=lfo,
+                amplitude=lfo,  # Each voice's volume tremolo'd by its own LFO at different rate
             )
             new_notes.append(note)
 

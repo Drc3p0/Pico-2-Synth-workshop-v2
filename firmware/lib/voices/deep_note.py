@@ -51,6 +51,8 @@ class Voice:
     description = "THX-style chord convergence from chaos to a massive chord"
 
     def __init__(self, synth, config=None):
+        # Synthesis technique: Multiple oscillators with noise-driven LFOs create initial chaos,
+        # then gradually converge to target pitches while noise LFOs decay, creating Shepard-like effect
         self.synth = synth
         cfg = dict(DEFAULTS)
         if config:
@@ -113,13 +115,13 @@ class Voice:
                 rate=0.0001,
                 scale=random.uniform(0.25, 0.5),
                 phase_offset=random.random(),
-                waveform=self.wave_noise,
+                waveform=self.wave_noise,  # Random waveform creates pitch jitter
             )
             self.notes[i] = synthio.Note(
                 synthio.midi_to_hz(self._notes_s1[i]),
                 waveform=self.wave_saw,
                 envelope=self.amp_env,
-                bend=self.lfos[i],
+                bend=self.lfos[i],  # Pitch modulation creates chaotic effect
             )
 
         self.synth.press([n for n in self.notes if n is not None])
@@ -182,7 +184,7 @@ class Voice:
                         t,
                     )
                     if self.lfos[i]:
-                        self.lfos[i].scale = max(self.lfos[i].scale * 0.997, 0.01)
+                        self.lfos[i].scale = max(self.lfos[i].scale * 0.997, 0.01)  # Gradually reduce noise modulation
             if elapsed > stage_time:
                 self._stage = 3
                 self._stage_start = now
@@ -199,7 +201,7 @@ class Voice:
                         t,
                     )
                     if self.lfos[i]:
-                        self.lfos[i].scale = max(self.lfos[i].scale * 0.995, 0.001)
+                        self.lfos[i].scale = max(self.lfos[i].scale * 0.995, 0.001)  # Continue noise decay
             if elapsed > stage_time:
                 self._stage = 4
                 self._stage_start = now
@@ -209,7 +211,7 @@ class Voice:
             if elapsed > self.stage4_time * self._bpm_scale:
                 if self.loop or self.self_play:
                     self.synth.release_all()
-                    self._start_sequence()
+                    self._start_sequence()  # Loop back to beginning
                 else:
                     self.synth.release_all()
                     self._playing = False

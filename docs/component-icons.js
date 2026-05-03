@@ -1,3 +1,9 @@
+/**
+ * component-icons.js
+ * SVG icon library for hardware component types.
+ * Supports: pot, ldr, button, touch_native, touch_mpr121, accel, keyboard
+ * Used in workspace cards and hardware zone items for visual identification.
+ */
 (function (root) {
   "use strict";
 
@@ -11,10 +17,22 @@
     keyboard: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="6" width="20" height="12" rx="2"/><rect x="4" y="8" width="3" height="5" rx="0.5"/><rect x="8" y="8" width="3" height="5" rx="0.5"/><rect x="12" y="8" width="3" height="5" rx="0.5"/><rect x="16" y="8" width="4" height="5" rx="0.5"/><rect x="4" y="14" width="16" height="2" rx="0.5"/></svg>'
   };
 
+  /**
+   * Retrieves SVG markup for a component type (falls back to pot icon if not found)
+   * @param {string} type - Component type (pot, ldr, button, touch_native, touch_mpr121, accel, keyboard)
+   * @returns {string} SVG markup string
+   */
   function getIcon(type) {
     return ICONS[type] || ICONS.pot;
   }
 
+  /**
+   * Creates a DOM element containing a component icon.
+   * Sets up sizing, flexbox alignment, and applies component-icon classes.
+   * @param {string} type - Component type
+   * @param {number} [size=24] - Icon size in pixels (width and height)
+   * @returns {HTMLElement} Span element with inline SVG and styling
+   */
   function createIconElement(type, size) {
     size = size || 24;
     var span = document.createElement('span');

@@ -257,36 +257,40 @@
     var $loopToggle      = $("loop-toggle");
     var $requirementsList = $("requirements-list");
 
-  // =========================================================================
-  // Utility helpers
-  // =========================================================================
+   // =========================================================================
+   // Utility helpers
+   // =========================================================================
 
-  function mapRange(value, inMin, inMax, outMin, outMax) {
-    return outMin + (outMax - outMin) * ((value - inMin) / (inMax - inMin));
-  }
+   /** Linearly map a value from one range to another */
+   function mapRange(value, inMin, inMax, outMin, outMax) {
+     return outMin + (outMax - outMin) * ((value - inMin) / (inMax - inMin));
+   }
 
-  function clamp(val, min, max) {
-    return val < min ? min : val > max ? max : val;
-  }
+   /** Clamp a value between min and max bounds */
+   function clamp(val, min, max) {
+     return val < min ? min : val > max ? max : val;
+   }
 
-  function displayNum(val, decimals) {
-    if (typeof decimals === "undefined") {
-      if (Math.abs(val) < 0.01) return val.toFixed(4);
-      if (Math.abs(val) < 1)    return val.toFixed(3);
-      if (Math.abs(val) < 100)  return val.toFixed(2);
-      return val.toFixed(1);
-    }
-    return val.toFixed(decimals);
-  }
+   /** Format a number for display with appropriate decimal places */
+   function displayNum(val, decimals) {
+     if (typeof decimals === "undefined") {
+       if (Math.abs(val) < 0.01) return val.toFixed(4);
+       if (Math.abs(val) < 1)    return val.toFixed(3);
+       if (Math.abs(val) < 100)  return val.toFixed(2);
+       return val.toFixed(1);
+     }
+     return val.toFixed(decimals);
+   }
 
-  function sliderStep(min, max) {
-    var range = max - min;
-    if (range <= 0.1)  return 0.0001;
-    if (range <= 1)    return 0.001;
-    if (range <= 10)   return 0.01;
-    if (range <= 100)  return 0.1;
-    return 1;
-  }
+   /** Compute appropriate slider step size based on range */
+   function sliderStep(min, max) {
+     var range = max - min;
+     if (range <= 0.1)  return 0.0001;
+     if (range <= 1)    return 0.001;
+     if (range <= 10)   return 0.01;
+     if (range <= 100)  return 0.1;
+     return 1;
+   }
 
   /** Convert HTML select value (hyphenated) to VOICES key (underscored) */
   function selectToKey(val) {
@@ -332,21 +336,23 @@
     return def && def.polyphony === "mono";
   }
 
-  // =========================================================================
-  // Board type selector
-  // =========================================================================
+   // =========================================================================
+   // Board type selector
+   // =========================================================================
 
-  function initBoardSelector() {
-    if (!$boardSelect) return;
-    $boardSelect.addEventListener("change", function () {
-      state.boardType = $boardSelect.value;
-      updateBoardDisplay();
-      updatePinout();
-      scheduleCodeUpdate();
-    });
-  }
+   /** Wire board selector and trigger updates on change */
+   function initBoardSelector() {
+     if (!$boardSelect) return;
+     $boardSelect.addEventListener("change", function () {
+       state.boardType = $boardSelect.value;
+       updateBoardDisplay();
+       updatePinout();
+       scheduleCodeUpdate();
+     });
+   }
 
-  function updateBoardDisplay() {
+   /** Update UI elements to reflect selected board (Pico2 vs Pico) */
+   function updateBoardDisplay() {
     var isPico2 = state.boardType === "pico2";
 
     if ($boardHint) {
@@ -371,45 +377,49 @@
     }
   }
 
-  // =========================================================================
-  // Audio initialization (autoplay policy)
-  // =========================================================================
+   // =========================================================================
+   // Audio initialization (autoplay policy)
+   // =========================================================================
 
-  function ensureAudioInit() {
-    if (audioInitDone) return Promise.resolve();
-    return SynthEngine.init().then(function () {
-      audioInitDone = true;
-    });
-  }
+   /** Initialize audio context on first user interaction */
+   function ensureAudioInit() {
+     if (audioInitDone) return Promise.resolve();
+     return SynthEngine.init().then(function () {
+       audioInitDone = true;
+     });
+   }
 
-  function handleFirstInteraction() {
-    ensureAudioInit();
-    document.removeEventListener("click", handleFirstInteraction);
-    document.removeEventListener("keydown", handleFirstInteraction);
-    document.removeEventListener("touchstart", handleFirstInteraction);
-  }
+   /** Trigger audio init and remove first-interaction listeners */
+   function handleFirstInteraction() {
+     ensureAudioInit();
+     document.removeEventListener("click", handleFirstInteraction);
+     document.removeEventListener("keydown", handleFirstInteraction);
+     document.removeEventListener("touchstart", handleFirstInteraction);
+   }
 
   document.addEventListener("click", handleFirstInteraction);
   document.addEventListener("keydown", handleFirstInteraction);
   document.addEventListener("touchstart", handleFirstInteraction);
 
-  // =========================================================================
-  // Browser voice management
-  // =========================================================================
+   // =========================================================================
+   // Browser voice management
+   // =========================================================================
 
-  function stopBrowserVoice() {
-    if (browserVoice) {
-      try {
-        if (typeof browserVoice.stop === "function") browserVoice.stop();
-        if (typeof browserVoice.dispose === "function") browserVoice.dispose();
-      } catch (e) {
-        console.warn("[app] Error stopping browser voice:", e);
-      }
-      browserVoice = null;
-    }
-  }
+   /** Stop and dispose current browser voice */
+   function stopBrowserVoice() {
+     if (browserVoice) {
+       try {
+         if (typeof browserVoice.stop === "function") browserVoice.stop();
+         if (typeof browserVoice.dispose === "function") browserVoice.dispose();
+       } catch (e) {
+         console.warn("[app] Error stopping browser voice:", e);
+       }
+       browserVoice = null;
+     }
+   }
 
-  function createBrowserVoice(voiceKey) {
+   /** Instantiate a new voice object from the VOICES definitions */
+   function createBrowserVoice(voiceKey) {
     var def = VOICES[voiceKey];
     if (!def) return null;
     var Ctor = window[def.jsClass];
@@ -435,11 +445,12 @@
     }
   }
 
-  // =========================================================================
-  // Param defaults initialization
-  // =========================================================================
+   // =========================================================================
+   // Param defaults initialization
+   // =========================================================================
 
-  function initParamValues(voiceKey) {
+   /** Initialize all param values to their defaults for selected voice */
+   function initParamValues(voiceKey) {
     var def = VOICES[voiceKey];
     if (!def) return;
     state.paramValues = {};
@@ -524,7 +535,8 @@
     }
   }
 
-  function updateAssignState(fieldName, inputType, gpio) {
+   /** Update internal state for an assignable field (button, pot, touch, scale, octave, etc.) */
+   function updateAssignState(fieldName, inputType, gpio) {
     if (inputType === "none" || !inputType) {
       delete state.assignMap[fieldName];
     } else {
@@ -610,57 +622,62 @@
     }
   }
 
-  function updateKeyLabels() {
-    if (!$keyboard) return;
-    var keys = $keyboard.querySelectorAll(".key");
-    for (var i = 0; i < keys.length; i++) {
-      var keyEl = keys[i];
-      var noteIndex = parseInt(keyEl.getAttribute("data-note"), 10);
-      var noteLabel = keyEl.querySelector(".key-note");
-      if (noteLabel) {
-        noteLabel.textContent = noteNameForIndex(noteIndex);
-      }
-    }
-  }
+   /** Update all key labels to reflect current scale and octave */
+   function updateKeyLabels() {
+     if (!$keyboard) return;
+     var keys = $keyboard.querySelectorAll(".key");
+     for (var i = 0; i < keys.length; i++) {
+       var keyEl = keys[i];
+       var noteIndex = parseInt(keyEl.getAttribute("data-note"), 10);
+       var noteLabel = keyEl.querySelector(".key-note");
+       if (noteLabel) {
+         noteLabel.textContent = noteNameForIndex(noteIndex);
+       }
+     }
+   }
 
-  // =========================================================================
-  // Piano note on/off
-  // =========================================================================
+   // =========================================================================
+   // Piano note on/off
+   // =========================================================================
 
-  function pianoNoteOn(noteIndex) {
-    var midi = midiNoteForIndex(noteIndex);
-    ensureAudioInit().then(function () {
-      if (!browserVoice) {
-        browserVoice = createBrowserVoice(state.selectedVoice);
-        syncParamsToVoice();
-      }
-      if (browserVoice && typeof browserVoice.noteOn === "function") {
-        browserVoice.noteOn(midi);
-      }
-    });
-  }
+   /** Trigger note-on event for a keyboard key */
+   function pianoNoteOn(noteIndex) {
+     var midi = midiNoteForIndex(noteIndex);
+     ensureAudioInit().then(function () {
+       if (!browserVoice) {
+         browserVoice = createBrowserVoice(state.selectedVoice);
+         syncParamsToVoice();
+       }
+       if (browserVoice && typeof browserVoice.noteOn === "function") {
+         browserVoice.noteOn(midi);
+       }
+     });
+   }
 
-  function pianoNoteOff(noteIndex) {
-    var midi = midiNoteForIndex(noteIndex);
-    if (browserVoice && typeof browserVoice.noteOff === "function") {
-      browserVoice.noteOff(midi);
-    }
-  }
+   /** Trigger note-off event for a keyboard key */
+   function pianoNoteOff(noteIndex) {
+     var midi = midiNoteForIndex(noteIndex);
+     if (browserVoice && typeof browserVoice.noteOff === "function") {
+       browserVoice.noteOff(midi);
+     }
+   }
 
-  function setKeyActive(noteIndex, active) {
-    if (!$keyboard) return;
-    var keyEl = $keyboard.querySelector('.key[data-note="' + noteIndex + '"]');
-    if (!keyEl) return;
-    if (active) {
-      keyEl.classList.add("active");
-      keyEl.classList.add("pressed");
-    } else {
-      keyEl.classList.remove("active");
-      keyEl.classList.remove("pressed");
-    }
-  }
+   /** Mark a key as actively pressed */
+   function setKeyActive(noteIndex, active) {
+     if (!$keyboard) return;
+     var keyEl = $keyboard.querySelector('.key[data-note="' + noteIndex + '"]');
+     if (!keyEl) return;
+     if (active) {
+       keyEl.classList.add("active");
+       keyEl.classList.add("pressed");
+     } else {
+       keyEl.classList.remove("active");
+       keyEl.classList.remove("pressed");
+     }
+   }
 
-  function setKeyLatched(noteIndex, latched) {
+   /** Mark a key as latched (held in latch mode) */
+   function setKeyLatched(noteIndex, latched) {
     if (!$keyboard) return;
     var keyEl = $keyboard.querySelector('.key[data-note="' + noteIndex + '"]');
     if (!keyEl) return;
@@ -671,98 +688,103 @@
     }
   }
 
-  // =========================================================================
-  // Mono latch: unlatch previous key when mono voice + latch mode
-  // =========================================================================
+   // =========================================================================
+   // Mono latch: unlatch previous key when mono voice + latch mode
+   // =========================================================================
 
-  function unlatchAllExcept(keepMidi) {
-    var toRemove = [];
-    latchedNotes.forEach(function (midi) {
-      if (midi !== keepMidi) {
-        toRemove.push(midi);
-      }
-    });
-    for (var i = 0; i < toRemove.length; i++) {
-      latchedNotes.delete(toRemove[i]);
-      if (browserVoice && typeof browserVoice.noteOff === "function") {
-        browserVoice.noteOff(toRemove[i]);
-      }
-    }
-    // Clear latched CSS from all keys, then re-mark the kept one
-    if ($keyboard) {
-      var keys = $keyboard.querySelectorAll(".key.latched");
-      for (var j = 0; j < keys.length; j++) {
-        keys[j].classList.remove("latched");
-      }
-    }
-  }
+   /** Unlatch all notes except the specified MIDI note (for mono voice) */
+   function unlatchAllExcept(keepMidi) {
+     var toRemove = [];
+     latchedNotes.forEach(function (midi) {
+       if (midi !== keepMidi) {
+         toRemove.push(midi);
+       }
+     });
+     for (var i = 0; i < toRemove.length; i++) {
+       latchedNotes.delete(toRemove[i]);
+       if (browserVoice && typeof browserVoice.noteOff === "function") {
+         browserVoice.noteOff(toRemove[i]);
+       }
+     }
+     // Clear latched CSS from all keys, then re-mark the kept one
+     if ($keyboard) {
+       var keys = $keyboard.querySelectorAll(".key.latched");
+       for (var j = 0; j < keys.length; j++) {
+         keys[j].classList.remove("latched");
+       }
+     }
+   }
 
-  function handleKeyPress(noteIndex) {
-    if (state.latchMode) {
-      var midi = midiNoteForIndex(noteIndex);
-      if (latchedNotes.has(midi)) {
-        // Second press: unlatch
-        latchedNotes.delete(midi);
-        setKeyLatched(noteIndex, false);
-        pianoNoteOff(noteIndex);
-      } else {
-        // Mono voice: unlatch previous note first
-        if (isMonoVoice()) {
-          unlatchAllExcept(midi);
-        }
-        // Latch this note
-        latchedNotes.add(midi);
-        setKeyLatched(noteIndex, true);
-        pianoNoteOn(noteIndex);
-      }
-      // Restart arpeggiator if running, so it picks up the new set
-      if (state.arpEnabled) {
-        restartArpeggiator();
-      }
-    } else {
-      activeKeys[noteIndex] = true;
-      setKeyActive(noteIndex, true);
-      pianoNoteOn(noteIndex);
-    }
-  }
+   /** Process key press in latch or normal mode */
+   function handleKeyPress(noteIndex) {
+     if (state.latchMode) {
+       var midi = midiNoteForIndex(noteIndex);
+       if (latchedNotes.has(midi)) {
+         // Second press: unlatch
+         latchedNotes.delete(midi);
+         setKeyLatched(noteIndex, false);
+         pianoNoteOff(noteIndex);
+       } else {
+         // Mono voice: unlatch previous note first
+         if (isMonoVoice()) {
+           unlatchAllExcept(midi);
+         }
+         // Latch this note
+         latchedNotes.add(midi);
+         setKeyLatched(noteIndex, true);
+         pianoNoteOn(noteIndex);
+       }
+       // Restart arpeggiator if running, so it picks up the new set
+       if (state.arpEnabled) {
+         restartArpeggiator();
+       }
+     } else {
+       activeKeys[noteIndex] = true;
+       setKeyActive(noteIndex, true);
+       pianoNoteOn(noteIndex);
+     }
+   }
 
-  function handleKeyRelease(noteIndex) {
-    if (state.latchMode) {
-      // In latch mode, release does nothing, toggle handled in press
-      return;
-    }
-    if (activeKeys[noteIndex]) {
-      delete activeKeys[noteIndex];
-      setKeyActive(noteIndex, false);
-      pianoNoteOff(noteIndex);
-    }
-  }
+   /** Process key release in non-latch mode */
+   function handleKeyRelease(noteIndex) {
+     if (state.latchMode) {
+       // In latch mode, release does nothing, toggle handled in press
+       return;
+     }
+     if (activeKeys[noteIndex]) {
+       delete activeKeys[noteIndex];
+       setKeyActive(noteIndex, false);
+       pianoNoteOff(noteIndex);
+     }
+   }
 
-  function releaseAllLatched() {
-    latchedNotes.forEach(function (midi) {
-      if (browserVoice && typeof browserVoice.noteOff === "function") {
-        browserVoice.noteOff(midi);
-      }
-    });
-    latchedNotes.clear();
-    if ($keyboard) {
-      var keys = $keyboard.querySelectorAll(".key.latched");
-      for (var i = 0; i < keys.length; i++) {
-        keys[i].classList.remove("latched");
-      }
-    }
-  }
+   /** Turn off all latched notes and clear visual state */
+   function releaseAllLatched() {
+     latchedNotes.forEach(function (midi) {
+       if (browserVoice && typeof browserVoice.noteOff === "function") {
+         browserVoice.noteOff(midi);
+       }
+     });
+     latchedNotes.clear();
+     if ($keyboard) {
+       var keys = $keyboard.querySelectorAll(".key.latched");
+       for (var i = 0; i < keys.length; i++) {
+         keys[i].classList.remove("latched");
+       }
+     }
+   }
 
-  function releaseAllActive() {
-    for (var idx in activeKeys) {
-      if (activeKeys.hasOwnProperty(idx)) {
-        var ni = parseInt(idx, 10);
-        setKeyActive(ni, false);
-        pianoNoteOff(ni);
-      }
-    }
-    activeKeys = {};
-  }
+   /** Turn off all actively pressed keys and clear visual state */
+   function releaseAllActive() {
+     for (var idx in activeKeys) {
+       if (activeKeys.hasOwnProperty(idx)) {
+         var ni = parseInt(idx, 10);
+         setKeyActive(ni, false);
+         pianoNoteOff(ni);
+       }
+     }
+     activeKeys = {};
+   }
 
   // =========================================================================
   // Keyboard event handling (mouse, touch, computer keyboard)
@@ -835,12 +857,14 @@
         state.currentOctave = Math.max(0, state.currentOctave - 1);
         if ($octaveDisplay) $octaveDisplay.textContent = "Octave " + state.currentOctave;
         updateKeyLabels();
+        scheduleCodeUpdate();
         return;
       }
       if (key === "x") {
         state.currentOctave = Math.min(8, state.currentOctave + 1);
         if ($octaveDisplay) $octaveDisplay.textContent = "Octave " + state.currentOctave;
         updateKeyLabels();
+        scheduleCodeUpdate();
         return;
       }
 
@@ -871,16 +895,18 @@
     updateKeyLabels();
   }
 
-  // =========================================================================
-  // Octave controls
-  // =========================================================================
+   // =========================================================================
+   // Octave controls
+   // =========================================================================
 
-  function initOctaveControls() {
+   /** Wire octave up/down buttons */
+   function initOctaveControls() {
     if ($octaveDown) {
       $octaveDown.addEventListener("click", function () {
         state.currentOctave = Math.max(0, state.currentOctave - 1);
         if ($octaveDisplay) $octaveDisplay.textContent = "Octave " + state.currentOctave;
         updateKeyLabels();
+        scheduleCodeUpdate();
       });
     }
     if ($octaveUp) {
@@ -888,15 +914,17 @@
         state.currentOctave = Math.min(8, state.currentOctave + 1);
         if ($octaveDisplay) $octaveDisplay.textContent = "Octave " + state.currentOctave;
         updateKeyLabels();
+        scheduleCodeUpdate();
       });
     }
   }
 
-  // =========================================================================
-  // Scale / Tonality controls
-  // =========================================================================
+   // =========================================================================
+   // Scale / Tonality controls
+   // =========================================================================
 
-  function initScaleControls() {
+   /** Wire scale and tonality selector controls */
+   function initScaleControls() {
     if ($scaleSelect) {
       $scaleSelect.addEventListener("change", function () {
         state.currentScale = $scaleSelect.value;
@@ -931,11 +959,12 @@
     }
   }
 
-  // =========================================================================
-  // Latch mode
-  // =========================================================================
+   // =========================================================================
+   // Latch mode
+   // =========================================================================
 
-  function initLatchControls() {
+   /** Wire latch mode toggle */
+   function initLatchControls() {
     if ($latchToggle) {
       $latchToggle.addEventListener("change", function () {
         state.latchMode = $latchToggle.checked;
@@ -960,11 +989,12 @@
     }
   }
 
-  // =========================================================================
-  // Arpeggiator
-  // =========================================================================
+   // =========================================================================
+   // Arpeggiator
+   // =========================================================================
 
-  function initArpControls() {
+   /** Wire arpeggiator controls (toggle, pattern, speed, loop) */
+   function initArpControls() {
     if ($arpToggle) {
       $arpToggle.addEventListener("change", function () {
         state.arpEnabled = $arpToggle.checked;
@@ -1006,25 +1036,27 @@
     }
   }
 
-  function getArpNotes() {
-    // Collect all latched + held note MIDI values, sorted
-    var notes = [];
-    latchedNotes.forEach(function (midi) {
-      notes.push(midi);
-    });
-    for (var idx in activeKeys) {
-      if (activeKeys.hasOwnProperty(idx)) {
-        var midi = midiNoteForIndex(parseInt(idx, 10));
-        if (notes.indexOf(midi) === -1) {
-          notes.push(midi);
-        }
-      }
-    }
-    notes.sort(function (a, b) { return a - b; });
-    return notes;
-  }
+   /** Get all currently active and latched notes, sorted by MIDI value */
+   function getArpNotes() {
+     // Collect all latched + held note MIDI values, sorted
+     var notes = [];
+     latchedNotes.forEach(function (midi) {
+       notes.push(midi);
+     });
+     for (var idx in activeKeys) {
+       if (activeKeys.hasOwnProperty(idx)) {
+         var midi = midiNoteForIndex(parseInt(idx, 10));
+         if (notes.indexOf(midi) === -1) {
+           notes.push(midi);
+         }
+       }
+     }
+     notes.sort(function (a, b) { return a - b; });
+     return notes;
+   }
 
-  function arpTick() {
+   /** Execute one step of the arpeggiator sequence */
+   function arpTick() {
     var notes = getArpNotes();
     if (notes.length === 0) {
       // Silence the last played arp note
@@ -1079,42 +1111,46 @@
     }
   }
 
-  function startArpeggiator() {
-    stopArpeggiator();
-    if (!state.arpEnabled) return;
-    var intervalMs = Math.round(60000 / state.arpSpeed);
-    arpNoteIndex = 0;
-    arpDirection = 1;
-    arpIntervalId = setInterval(arpTick, intervalMs);
-  }
+   /** Start the arpeggiator timer at current speed */
+   function startArpeggiator() {
+     stopArpeggiator();
+     if (!state.arpEnabled) return;
+     var intervalMs = Math.round(60000 / state.arpSpeed);
+     arpNoteIndex = 0;
+     arpDirection = 1;
+     arpIntervalId = setInterval(arpTick, intervalMs);
+   }
 
-  function stopArpeggiator() {
-    if (arpIntervalId !== null) {
-      clearInterval(arpIntervalId);
-      arpIntervalId = null;
-    }
-    // Release last arp note
-    if (lastArpMidi !== null && browserVoice && typeof browserVoice.noteOff === "function") {
-      browserVoice.noteOff(lastArpMidi);
-      lastArpMidi = null;
-    }
-  }
+   /** Stop and clear the arpeggiator interval */
+   function stopArpeggiator() {
+     if (arpIntervalId !== null) {
+       clearInterval(arpIntervalId);
+       arpIntervalId = null;
+     }
+     // Release last arp note
+     if (lastArpMidi !== null && browserVoice && typeof browserVoice.noteOff === "function") {
+       browserVoice.noteOff(lastArpMidi);
+       lastArpMidi = null;
+     }
+   }
 
-  function restartArpeggiator() {
-    if (state.arpEnabled) {
-      startArpeggiator();
-    }
-  }
+   /** Restart the arpeggiator if enabled (after pattern/speed change) */
+   function restartArpeggiator() {
+     if (state.arpEnabled) {
+       startArpeggiator();
+     }
+   }
 
   // =========================================================================
   // WAV files included by default (todbot wavetables)
   // =========================================================================
 
-  // =========================================================================
-  // Hardware checkboxes (MPR121, Accelerometer)
-  // =========================================================================
+   // =========================================================================
+   // Hardware checkboxes (MPR121, Accelerometer)
+   // =========================================================================
 
-  function initHardwareCheckboxes() {
+   /** Wire hardware option checkboxes (MPR121 and accelerometer) */
+   function initHardwareCheckboxes() {
      var $mpr121Enabled = document.getElementById("mpr121-enabled");
      var $accelEnabled  = document.getElementById("accel-enabled");
      var $mpr121Row     = document.getElementById("mpr121-row");
@@ -1202,11 +1238,12 @@
     }
   }
 
-  // =========================================================================
-  // Parameter panel rendering
-  // =========================================================================
+   // =========================================================================
+   // Parameter panel rendering
+   // =========================================================================
 
-  function renderParamPanel() {
+   /** Render the param panel with controls for all parameters of selected voice */
+   function renderParamPanel() {
     var def = VOICES[state.selectedVoice];
     if (!def) return;
 
@@ -1278,17 +1315,20 @@
           color: CircularPot.COLOR_PURPLE,
           size: 40,
           onChange: function (name, val) {
+            if (hwZone && hwZone._syncingParam) return;
             state.paramValues[name] = val;
             if (browserVoice && typeof browserVoice.setParam === 'function') {
               browserVoice.setParam(name, val);
             }
             if (hwZone) {
+              hwZone._syncingParam = true;
               for (var uid in hwZone.items) {
                 if (hwZone.items[uid].paramName === name) {
-                  hwZone.items[uid]._pot && hwZone.items[uid]._pot.setValue(val);
+                  hwZone.items[uid]._pot && hwZone.items[uid]._pot.setValueSilent(val);
                   break;
                 }
               }
+              hwZone._syncingParam = false;
             }
             scheduleCodeUpdate();
           }
@@ -1330,29 +1370,31 @@
     renderKeyPalette();
   }
 
-  function syncPaletteToZone() {
-    var rows = document.querySelectorAll('.palette-param-row');
-    var inZone = {};
-    if (hwZone) {
-      for (var id in hwZone.items) {
-        var it = hwZone.items[id];
-        if (it.paramName) inZone[it.paramName] = true;
-      }
-    }
-    for (var i = 0; i < rows.length; i++) {
-      var pName = rows[i].getAttribute('data-param');
-      var cb = rows[i].querySelector('.palette-param-checkbox');
-      if (inZone[pName]) {
-        rows[i].classList.add('in-workspace');
-        if (cb) cb.checked = true;
-      } else {
-        rows[i].classList.remove('in-workspace');
-        if (cb) cb.checked = false;
-      }
-    }
-  }
+   /** Sync palette checkboxes with current hwZone state */
+   function syncPaletteToZone() {
+     var rows = document.querySelectorAll('.palette-param-row');
+     var inZone = {};
+     if (hwZone) {
+       for (var id in hwZone.items) {
+         var it = hwZone.items[id];
+         if (it.paramName) inZone[it.paramName] = true;
+       }
+     }
+     for (var i = 0; i < rows.length; i++) {
+       var pName = rows[i].getAttribute('data-param');
+       var cb = rows[i].querySelector('.palette-param-checkbox');
+       if (inZone[pName]) {
+         rows[i].classList.add('in-workspace');
+         if (cb) cb.checked = true;
+       } else {
+         rows[i].classList.remove('in-workspace');
+         if (cb) cb.checked = false;
+       }
+     }
+   }
 
-  function renderKeyPalette() {
+   /** Render the key palette with draggable key buttons */
+   function renderKeyPalette() {
     var keyPaletteEl = document.getElementById('key-palette');
     if (!keyPaletteEl) return;
     keyPaletteEl.innerHTML = '';
@@ -1390,11 +1432,12 @@
     keyPaletteEl.appendChild(keysRow);
   }
 
-  // =========================================================================
-  // Continuous inputs (Pots / Accel)
-  // =========================================================================
+   // =========================================================================
+   // Continuous inputs (Pots / Accel)
+   // =========================================================================
 
-  function wirePotSlider(potEl, potIdx, gpio) {
+   /** Wire pot slider input to normalized value application */
+   function wirePotSlider(potEl, potIdx, gpio) {
     if (!potEl) return;
     var $output = potEl.parentElement.querySelector("output");
     potEl.addEventListener("input", function () {
@@ -1407,7 +1450,8 @@
     });
   }
 
-  function createPotRow(potIdx, gpio) {
+   /** Create a row for an additional potentiometer input */
+   function createPotRow(potIdx, gpio) {
     var potId = String.fromCharCode(97 + potIdx);
     var rowDiv = document.createElement("div");
     rowDiv.className = "live-input-row";
@@ -1476,7 +1520,8 @@
     return { el: rowDiv, slider: slider, output: output, id: potId, gpio: gpio, gpioSelect: gpioSelect };
   }
 
-  function initContinuousInputs() {
+   /** Initialize pot and accelerometer continuous inputs */
+   function initContinuousInputs() {
     if (!$potA) return;
 
     state.pots = [];
@@ -1578,11 +1623,12 @@
     }
   }
 
-  // =========================================================================
-  // Waveform animation
-  // =========================================================================
+   // =========================================================================
+   // Waveform animation
+   // =========================================================================
 
-  function initWaveformAnimation() {
+   /** Initialize waveform animation with audio analysis */
+   function initWaveformAnimation() {
     if (!$waveformCanvas) return;
     var ctx = $waveformCanvas.getContext("2d");
     var w = $waveformCanvas.width;
@@ -1715,11 +1761,12 @@
     draw();
   }
 
-  // =========================================================================
-  // Pinout update
-  // =========================================================================
+   // =========================================================================
+   // Pinout update
+   // =========================================================================
 
-  function updatePinout() {
+   /** Render pinout diagram based on active connections from hwZone */
+   function updatePinout() {
     if (!window.PinoutGenerator) return;
 
     var activeConnections;
@@ -1733,21 +1780,23 @@
     PinoutGenerator.render("pinout-container", activeConnections);
   }
 
-  // =========================================================================
-  // Code generation
-  // =========================================================================
+   // =========================================================================
+   // Code generation
+   // =========================================================================
 
-  var codeUpdateTimer = null;
+   var codeUpdateTimer = null;
 
+    /** Schedule code generation to run after user interactions pause */
    function scheduleCodeUpdate() {
-    if (codeUpdateTimer) clearTimeout(codeUpdateTimer);
-    codeUpdateTimer = setTimeout(function () {
-      updateCodeOutput();
-      updateRequirementsList();
-    }, 150);
-  }
+     if (codeUpdateTimer) clearTimeout(codeUpdateTimer);
+     codeUpdateTimer = setTimeout(function () {
+       updateCodeOutput();
+       updateRequirementsList();
+     }, 150);
+   }
 
-  function generatePythonCode() {
+   /** Generate Python code.py for the Pico 2 based on current state */
+   function generatePythonCode() {
     var voiceKey = state.selectedVoice;
     var def = VOICES[voiceKey];
     if (!def) return "# No voice selected";
@@ -1794,21 +1843,45 @@
     lines.push('    "input_map": {');
 
     var wsState = state.workspaceState || { params: {}, keys: {} };
+    // Support both old WorkspaceManager format ({params:{name:{adjustable,hwType,gpio}}})
+    // and new HardwareZone format ({layout:{}, bindings:{name:{mode,source,config}}})
     var wsParams = wsState.params || {};
+    var wsBindings = wsState.bindings || {};
 
+    // New HardwareZone format: iterate bindings
+    for (var bName in wsBindings) {
+      if (!wsBindings.hasOwnProperty(bName)) continue;
+      var binding = wsBindings[bName];
+      if (!binding.mode || !binding.source) continue;
+      var hwType = binding.mode;
+      var gpio = binding.source;
+      var srcName = '';
+      if (hwType === 'pot') srcName = 'pot_' + String.fromCharCode(97 + GPIO_POT_PINS.indexOf(gpio));
+      else if (hwType === 'ldr') srcName = 'ldr_' + String.fromCharCode(97 + GPIO_POT_PINS.indexOf(gpio));
+      else if (hwType === 'button') srcName = 'button_' + gpio.replace('GP', '');
+      else if (hwType === 'touch_native') srcName = 'touch_native_' + gpio.replace('GP', '');
+      else if (hwType === 'touch_mpr121') srcName = 'mpr121_' + gpio;
+      else if (hwType === 'accel') srcName = 'accel_' + gpio.toLowerCase();
+      if (srcName) {
+        lines.push('        "' + bName + '": {"type": "' + hwType + '", "gpio": "' + gpio + '", "source": "' + srcName + '"},');
+      }
+    }
+
+    // Legacy WorkspaceManager format fallback
     for (var pName in wsParams) {
       if (!wsParams.hasOwnProperty(pName)) continue;
+      if (wsBindings[pName]) continue; // already handled above
       var ws = wsParams[pName];
       if (!ws.adjustable || !ws.hwType || !ws.gpio) continue;
-      var srcName = '';
-      if (ws.hwType === 'pot') srcName = 'pot_' + String.fromCharCode(97 + GPIO_POT_PINS.indexOf(ws.gpio));
-      else if (ws.hwType === 'ldr') srcName = 'ldr_' + String.fromCharCode(97 + GPIO_POT_PINS.indexOf(ws.gpio));
-      else if (ws.hwType === 'button') srcName = 'button_' + ws.gpio.replace('GP', '');
-      else if (ws.hwType === 'touch_native') srcName = 'touch_native_' + ws.gpio.replace('GP', '');
-      else if (ws.hwType === 'touch_mpr121') srcName = 'mpr121_' + ws.gpio;
-      else if (ws.hwType === 'accel') srcName = 'accel_' + ws.gpio.toLowerCase();
-      if (srcName) {
-        lines.push('        "' + pName + '": {"type": "' + ws.hwType + '", "gpio": "' + ws.gpio + '", "source": "' + srcName + '"},');
+      var srcName2 = '';
+      if (ws.hwType === 'pot') srcName2 = 'pot_' + String.fromCharCode(97 + GPIO_POT_PINS.indexOf(ws.gpio));
+      else if (ws.hwType === 'ldr') srcName2 = 'ldr_' + String.fromCharCode(97 + GPIO_POT_PINS.indexOf(ws.gpio));
+      else if (ws.hwType === 'button') srcName2 = 'button_' + ws.gpio.replace('GP', '');
+      else if (ws.hwType === 'touch_native') srcName2 = 'touch_native_' + ws.gpio.replace('GP', '');
+      else if (ws.hwType === 'touch_mpr121') srcName2 = 'mpr121_' + ws.gpio;
+      else if (ws.hwType === 'accel') srcName2 = 'accel_' + ws.gpio.toLowerCase();
+      if (srcName2) {
+        lines.push('        "' + pName + '": {"type": "' + ws.hwType + '", "gpio": "' + ws.gpio + '", "source": "' + srcName2 + '"},');
       }
     }
 
@@ -1856,17 +1929,51 @@
       var p = def.params[pName];
       if (p.type === "continuous") {
         var val = state.paramValues[pName] !== undefined ? state.paramValues[pName] : p.default;
-        var isAdjustable = wsParams[pName] && wsParams[pName].adjustable;
-        var marker = isAdjustable ? "(adjustable via " + (wsParams[pName].hwType || "?") + ")" : "(hard-set)";
+        var isAdjustable = wsBindings[pName] || (wsParams[pName] && wsParams[pName].adjustable);
+        var adjustHwType = wsBindings[pName] ? wsBindings[pName].mode : (wsParams[pName] ? wsParams[pName].hwType : "?");
+        var marker = isAdjustable ? "(adjustable via " + (adjustHwType || "?") + ")" : "(hard-set)";
         lines.push('    "' + pName + '": ' + displayNum(val) + ',  # ' + marker + ' range: ' + displayNum(p.min) + ' - ' + displayNum(p.max));
       }
     }
     lines.push("");
 
     // Hardware
+    // Extract pin lists from HardwareZone layout
+    var genButtonPins = [];
+    var genAnalogPins = [];
+    var genTouchPins = [];
+    var wsLayout = wsState.layout || {};
+    for (var lid in wsLayout) {
+      if (!wsLayout.hasOwnProperty(lid)) continue;
+      var li = wsLayout[lid];
+      if (!li.hwType || !li.gpio) continue;
+      if (li.hwType === 'button') {
+        var bpins = Array.isArray(li.gpio) ? li.gpio : [li.gpio];
+        for (var bp = 0; bp < bpins.length; bp++) {
+          if (bpins[bp] && genButtonPins.indexOf(bpins[bp]) === -1) genButtonPins.push(bpins[bp]);
+        }
+      } else if (li.hwType === 'pot' || li.hwType === 'ldr') {
+        if (genAnalogPins.indexOf(li.gpio) === -1) genAnalogPins.push(li.gpio);
+      } else if (li.hwType === 'touch_native') {
+        var tpins = Array.isArray(li.gpio) ? li.gpio : [li.gpio];
+        for (var tp = 0; tp < tpins.length; tp++) {
+          if (tpins[tp] && genTouchPins.indexOf(tpins[tp]) === -1) genTouchPins.push(tpins[tp]);
+        }
+      }
+    }
+
     lines.push('    # ---- Hardware Options ----');
     lines.push('    "mpr121_enabled": ' + (state.hardwareOptions.mpr121_enabled ? "True" : "False") + ',');
     lines.push('    "accelerometer_enabled": ' + (state.hardwareOptions.accelerometer_enabled ? "True" : "False") + ',');
+    if (genButtonPins.length) {
+      lines.push('    "button_pins": ' + JSON.stringify(genButtonPins) + ',');
+    }
+    if (genAnalogPins.length) {
+      lines.push('    "analog_pins": ' + JSON.stringify(genAnalogPins) + ',');
+    }
+    if (genTouchPins.length) {
+      lines.push('    "touch_pins": ' + JSON.stringify(genTouchPins) + ',');
+    }
     lines.push("");
 
     // Audio
@@ -2086,21 +2193,23 @@
     return result;
   }
 
+    // =========================================================================
+   // Code output rendering
    // =========================================================================
-  // Code output rendering
-  // =========================================================================
 
-  function updateCodeOutput() {
-    if (!$codeOutput) return;
-    var code = generatePythonCode();
-    $codeOutput.innerHTML = highlightPython(code);
-  }
+   /** Render highlighted Python code to the output panel */
+   function updateCodeOutput() {
+     if (!$codeOutput) return;
+     var code = generatePythonCode();
+     $codeOutput.innerHTML = highlightPython(code);
+   }
 
-  // =========================================================================
-  // Requirements list generation
-  // =========================================================================
+   // =========================================================================
+   // Requirements list generation
+   // =========================================================================
 
-  function updateRequirementsList() {
+   /** Update the requirements list (firmware, libraries, files needed) */
+   function updateRequirementsList() {
     if (!$requirementsList) return;
 
     var html = "";
@@ -2140,11 +2249,12 @@
     $requirementsList.innerHTML = html;
   }
 
-  // =========================================================================
-  // JSON config generation
-  // =========================================================================
+   // =========================================================================
+   // JSON config generation
+   // =========================================================================
 
-  function generateJsonConfig() {
+   /** Generate JSON configuration object reflecting current state */
+   function generateJsonConfig() {
     var def = VOICES[state.selectedVoice];
     var config = {
       board: state.boardType,
@@ -2199,11 +2309,12 @@
     return config;
   }
 
+    // =========================================================================
+   // Copy / Download buttons
    // =========================================================================
-  // Copy / Download buttons
-  // =========================================================================
 
-  function generateInstructionsText() {
+   /** Generate human-readable setup instructions text */
+   function generateInstructionsText() {
     var boardName = state.boardType === "pico2" ? "Pico 2 (RP2350)" : "Pico (RP2040)";
     var uf2Name = state.boardType === "pico2" ? "pico2-latest.uf2" : "pico-latest.uf2";
 
@@ -2313,7 +2424,8 @@
     }
   }
 
-  function downloadBundle() {
+   /** Create bundle (zip) with code, config, and instructions */
+   function downloadBundle() {
     var code = generatePythonCode();
     var json = JSON.stringify(generateJsonConfig(), null, 2);
     var instructions = generateInstructionsText();
@@ -2342,7 +2454,8 @@
     }
   }
 
-  function copyToClipboard(text) {
+   /** Copy text to clipboard using modern or fallback API */
+   function copyToClipboard(text) {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       return navigator.clipboard.writeText(text);
     }
@@ -2359,7 +2472,8 @@
     });
   }
 
-  function downloadFile(filename, content, mimeType) {
+   /** Trigger file download in browser */
+   function downloadFile(filename, content, mimeType) {
     var blob = new Blob([content], { type: mimeType || "text/plain" });
     var url = URL.createObjectURL(blob);
     var a = document.createElement("a");
@@ -2374,11 +2488,12 @@
     }, 100);
   }
 
-  // =========================================================================
-  // Serial integration
-  // =========================================================================
+   // =========================================================================
+   // Serial integration
+   // =========================================================================
 
-  function initSerial() {
+   /** Wire serial connection and device sync buttons */
+   function initSerial() {
     if (!window.PicoSerial) return;
 
     if ($btnConnectPico) {
@@ -2728,7 +2843,8 @@
     }
   }
 
-  function handleSerialData(data) {
+   /** Handle serial data from device (buttons, pots, touch, accel) */
+   function handleSerialData(data) {
     if (data.mon) { handleMonitorData(data); return; }
      // Expected: {"btn":[0,1,0,0],"pot":[512,1023,0],"accel":[0.1,-0.3],"touch":[1,0,0,1,...]}
 
@@ -2796,11 +2912,12 @@
      }
    }
 
-  // =========================================================================
-  // Voice selection handler
-  // =========================================================================
+   // =========================================================================
+   // Voice selection handler
+   // =========================================================================
 
-  function onVoiceChange() {
+   /** Handle voice selection change and state restoration */
+   function onVoiceChange() {
     var val = $voiceSelect.value;
     var voiceKey = selectToKey(val);
     if (!VOICES[voiceKey]) return;
@@ -2839,7 +2956,8 @@
     scheduleCodeUpdate();
   }
 
-  function initControlsPromotion() {
+   /** Wire draggable controls for promotion to hardware zone */
+   function initControlsPromotion() {
     var promotables = document.querySelectorAll('.controls-promotable[draggable="true"]');
     for (var i = 0; i < promotables.length; i++) {
       (function (el) {
@@ -2854,7 +2972,8 @@
     }
   }
 
-  function initWaveformDrag() {
+   /** Wire waveform display for dragging to hardware zone */
+   function initWaveformDrag() {
     var wfDraggable = document.getElementById('waveform-draggable');
     if (!wfDraggable) return;
     wfDraggable.addEventListener('dragstart', function (e) {
@@ -2863,7 +2982,8 @@
     });
   }
 
-  function initVoiceHwAssign() {
+   /** Wire voice hardware assignment toggle */
+   function initVoiceHwAssign() {
     var toggle = document.getElementById('voice-hw-assign-toggle');
     var configDiv = document.getElementById('voice-hw-assign-config');
     if (!toggle || !configDiv) return;
@@ -2882,11 +3002,12 @@
     });
   }
 
-  // =========================================================================
-  // Initialization
-  // =========================================================================
+   // =========================================================================
+   // Initialization
+   // =========================================================================
 
-  function init() {
+   /** Initialize the entire application */
+   function init() {
     // Set initial voice
     if ($voiceSelect) {
       state.selectedVoice = selectToKey($voiceSelect.value);
@@ -2918,13 +3039,17 @@
       getParamValue: function (name) {
         return state.paramValues[name];
       },
+      _syncingParam: false,
       setParamValue: function (name, val) {
+        if (hwZone._syncingParam) return;
+        hwZone._syncingParam = true;
         state.paramValues[name] = val;
-        if (palettePots[name]) palettePots[name].setValue(val);
+        if (palettePots[name]) palettePots[name].setValueSilent(val);
         if (browserVoice && typeof browserVoice.setParam === 'function') {
           browserVoice.setParam(name, val);
         }
         scheduleCodeUpdate();
+        hwZone._syncingParam = false;
       },
       getScaleKeys: function () {
         var keys = [];
@@ -2981,6 +3106,9 @@
       }
     });
     hwZone.init('hw-zone-container');
+    hwZone._syncingParam = false;
+    window._hwZone = hwZone;
+    window._appState = state;
 
     initControlsPromotion();
     initWaveformDrag();

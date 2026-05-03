@@ -1,3 +1,9 @@
+/**
+ * circular-pot.js
+ * Wrapper around pureknob.js providing a consistent circular potentiometer UI component.
+ * Handles value scaling for fractional steps, formatting, silent value updates,
+ * and color theming. Silent updates prevent feedback loops when monitor data arrives.
+ */
 (function (root) {
   "use strict";
 
@@ -9,6 +15,20 @@
   var COLOR_TEAL = '#14B8A6';
   var COLOR_LABEL = '#e2e8f0';
 
+  /**
+   * CircularPot constructor
+   * @param {Object} options - Configuration object
+   * @param {string} options.name - Parameter name
+   * @param {string} [options.label] - Display label (defaults to name)
+   * @param {number} [options.min=0] - Minimum parameter value
+   * @param {number} [options.max=100] - Maximum parameter value
+   * @param {number} [options.step=1] - Minimum step size (can be fractional)
+   * @param {number} [options.value] - Initial value
+   * @param {Function} [options.onChange] - Callback on user change
+   * @param {string} [options.color] - Knob color (defaults to purple)
+   * @param {number} [options.size=70] - Knob size in pixels
+   * @param {boolean} [options.readonly=false] - If true, knob is non-interactive
+   */
   function CircularPot(options) {
     this.name = options.name;
     this.label = options.label || options.name;
@@ -26,6 +46,10 @@
     this._build();
   }
 
+  /**
+   * Build the pureknob instance with pureknob configuration and value converters
+   * @private
+   */
   CircularPot.prototype._build = function () {
     var self = this;
     var knob = pureknob.createKnob(this.size, this.size);
@@ -66,6 +90,14 @@
     this._container = wrapper;
   };
 
+  /**
+   * Convert parameter value to integer for pureknob (handles fractional steps).
+   * For step < 1, multiplies by 10^precision to store as integer.
+   * Example: value=0.5 with step=0.1 -> multiply by 10 -> 5
+   * @private
+   * @param {number} val - Parameter value
+   * @returns {number} Integer value suitable for pureknob
+   */
   CircularPot.prototype._toInternal = function (val) {
     if (this.step < 1) {
       var precision = Math.ceil(-Math.log10(this.step));
@@ -75,6 +107,13 @@
     return Math.round(val);
   };
 
+  /**
+   * Convert pureknob integer back to parameter value (inverse of _toInternal).
+   * For step < 1, divides by 10^precision to restore original scale.
+   * @private
+   * @param {number} raw - Integer value from pureknob
+   * @returns {number} Parameter value in original scale
+   */
   CircularPot.prototype._fromInternal = function (raw) {
     if (this.step < 1) {
       var precision = Math.ceil(-Math.log10(this.step));
@@ -92,25 +131,46 @@
     return Math.round(val).toString();
   };
 
+  /**
+   * Gets the DOM node for insertion into the page
+   * @returns {HTMLElement} Container div
+   */
   CircularPot.prototype.node = function () {
     return this._container;
   };
 
+  /**
+   * Set value and trigger onChange callback
+   * @param {number} val - New parameter value
+   */
   CircularPot.prototype.setValue = function (val) {
     this.value = val;
     this._knob.setValue(this._toInternal(val));
   };
 
+  /**
+   * Silent value update: Sets value without triggering onChange callback.
+   * Used by monitor data updates to prevent feedback loops when hardware values
+   * arrive and sync the UI without broadcasting change events.
+   * @param {number} val - New parameter value
+   */
   CircularPot.prototype.setValueSilent = function (val) {
     this.value = val;
     this._knob.setValueFloating(this._toInternal(val));
   };
 
+  /**
+   * Change the knob foreground color
+   * @param {string} color - CSS color string
+   */
   CircularPot.prototype.setColor = function (color) {
     this.color = color;
     this._knob.setProperty('colorFG', color);
   };
 
+  /**
+   * Cleanup: Removes DOM node and nullifies references
+   */
   CircularPot.prototype.destroy = function () {
     if (this._container && this._container.parentNode) {
       this._container.parentNode.removeChild(this._container);

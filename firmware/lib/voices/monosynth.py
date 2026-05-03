@@ -46,6 +46,8 @@ class Voice:
     description = "A fat monosynth with filter, vibrato, and detune"
 
     def __init__(self, synth, config=None):
+        # Synthesis technique: detuned oscillators (slightly different frequencies) 
+        # mixed with a low-pass filter and vibrato LFO for warmth and movement
         self.synth = synth
         cfg = dict(DEFAULTS)
         if config:
@@ -99,7 +101,7 @@ class Voice:
 
         f = synthio.midi_to_hz(midi_note)
         for i in range(self.oscs_per_note):
-            fr = f * (1 + (self.osc_detune * i))
+            fr = f * (1 + (self.osc_detune * i))  # Each osc slightly detuned from base frequency
             try:
                 lpf = self.synth.low_pass_filter(self.filter_freq, self.filter_res)
             except Exception:
@@ -108,7 +110,7 @@ class Voice:
                 "frequency": fr,
                 "envelope": amp_env,
                 "waveform": self.wave_saw,
-                "bend": self.lfo_vibrato,
+                "bend": self.lfo_vibrato,  # LFO modulates pitch slightly for vibrato effect
             }
             if lpf:
                 kwargs["filter"] = lpf
@@ -162,12 +164,12 @@ class Voice:
         # Update filter on active oscillators
         for osc in self.oscs:
             try:
-                osc.filter = self.synth.low_pass_filter(self.filter_freq, self.filter_res)
+                osc.filter = self.synth.low_pass_filter(self.filter_freq, self.filter_res)  # Real-time filter cutoff changes
             except Exception:
                 pass
 
         # Self-play auto-advance
         if self.self_play:
             now = time.monotonic()
-            if now - self._last_auto_time > self.self_play_speed:
+            if now - self._last_auto_time > self.self_play_speed:  # Time-based sequencing
                 self._auto_play_next()
