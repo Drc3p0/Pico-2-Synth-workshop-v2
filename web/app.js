@@ -2792,12 +2792,13 @@
                 else btnEl.classList.remove("hw-btn-pressed");
               }
               if (item.kind === "key" || item.kind === "keys") {
+                var noteIdx = (item.kind === "key") ? item.keyIndex : gi;
                 var devKey = "_devPressed_" + gi;
                 if (pressed && !item[devKey]) {
-                  handleKeyPress(gi);
+                  handleKeyPress(noteIdx);
                   item[devKey] = true;
                 } else if (!pressed && item[devKey]) {
-                  handleKeyRelease(gi);
+                  handleKeyRelease(noteIdx);
                   item[devKey] = false;
                 }
               }
