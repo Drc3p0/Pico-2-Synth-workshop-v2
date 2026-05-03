@@ -3064,6 +3064,9 @@
       onKeyRelease: function (noteIndex) {
         handleKeyRelease(noteIndex);
       },
+      getNoteName: function (keyIndex) {
+        return noteNameForIndex(keyIndex);
+      },
       getControlValue: function (name) {
         if (name === "scale") return state.currentScale || ($scaleSelect ? $scaleSelect.value : "pentatonic_major");
         if (name === "tonality") return state.tonality || "major";

@@ -82,6 +82,7 @@
     this.setControlValue = options.setControlValue || function(){};
     this.onKeyPress = options.onKeyPress || function(){};
     this.onKeyRelease = options.onKeyRelease || function(){};
+    this.getNoteName = options.getNoteName || null;
     this.getScaleKeys = options.getScaleKeys || function(){ return []; };
     this.usedGPIO = {}; // {gpio: itemId} map to prevent pin conflicts
     this._minHeight = 300;
@@ -471,7 +472,10 @@
       var def = params[item.paramName];
       return def ? def.label : item.paramName;
     }
-    if (item.kind === "key") return "Key " + item.keyIndex;
+    if (item.kind === "key") {
+      var noteName = this.getNoteName ? this.getNoteName(item.keyIndex) : null;
+      return noteName || ("Key " + item.keyIndex);
+    }
     if (item.kind === "keys") return "Keyboard (Scale)";
     if (item.kind === "control") return item.label || item.controlName;
     if (item.kind === "waveform") return "Waveform / OLED";
