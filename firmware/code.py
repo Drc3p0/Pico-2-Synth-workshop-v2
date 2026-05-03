@@ -226,6 +226,17 @@ def build_monitor(config, inputs):
 # Helpers
 # ============================================================================
 
+def _midi_for_key_index(key_index, config):
+    """Compute MIDI note for a key index using scale intervals and octave from config."""
+    scale = config.get("scale", [0, 2, 4, 5, 7, 9, 11])
+    octave = config.get("octave", 3)
+    scale_len = len(scale)
+    degree = key_index % scale_len
+    octave_offset = key_index // scale_len
+    base_midi = (octave + 1) * 12
+    return base_midi + scale[degree] + (octave_offset * 12)
+
+
 def _get_input_value(source_name, inputs):
     if source_name.startswith("pot_") or source_name.startswith("ldr_"):
         idx = ord(source_name[-1]) - ord("a")
@@ -344,6 +355,7 @@ while True:
 
     # --- Button Events ---
     input_map = CONFIG.get("input_map", {})
+    key_map = CONFIG.get("key_map", {})
     for btn_idx, pressed in inputs.get_button_events():  # GPIO button press/release events
         led.pulse()
         _mon_activity = True
@@ -358,8 +370,15 @@ while True:
                         oled.toggle_verbose(param_name)
                         oled.show_input(param_name, "ON")
 
+        # Check key_map for note mapping (set by web configurator)
+        if btn_source in key_map:
+            midi_note = _midi_for_key_index(key_map[btn_source], CONFIG)
+            if pressed:
+                voice.note_on(midi_note)
+            else:
+                voice.note_off(midi_note)
         # If button is unmapped, use as playable keyboard (C major scale starting at MIDI 48)
-        if btn_source not in input_map.values():
+        elif btn_source not in input_map.values():
             scale = [0, 4, 7, 12, -5, -12, 5, 9]  # C major intervals in semitones
             midi_note = 48 + (scale[btn_idx % len(scale)])
             if pressed:
@@ -378,8 +397,15 @@ while True:
                 if source == touch_source:
                     if pressed:
                         voice.set_param(param_name, 1)
-            # If unmapped, use as keyboard keyboard starting at MIDI 48
-            if touch_source not in input_map.values():
+            # Check key_map for note mapping
+            if touch_source in key_map:
+                midi_note = _midi_for_key_index(key_map[touch_source], CONFIG)
+                if pressed:
+                    voice.note_on(midi_note)
+                else:
+                    voice.note_off(midi_note)
+            # If unmapped, use as keyboard starting at MIDI 48
+            elif touch_source not in input_map.values():
                 midi_note = 48 + ch
                 if pressed:
                     voice.note_on(midi_note)
@@ -396,8 +422,15 @@ while True:
             if source == touch_source:
                 if touched:
                     voice.set_param(param_name, 1)
+        # Check key_map for note mapping
+        if touch_source in key_map:
+            midi_note = _midi_for_key_index(key_map[touch_source], CONFIG)
+            if touched:
+                voice.note_on(midi_note)
+            else:
+                voice.note_off(midi_note)
         # If unmapped, use as playable keyboard
-        if touch_source not in input_map.values():
+        elif touch_source not in input_map.values():
             midi_note = 48 + t_idx
             if touched:
                 voice.note_on(midi_note)

@@ -2587,6 +2587,9 @@
     var analogPins = [];
     var accelDeadZone = 5;
     var accelSmoothing = 25;
+    // key_map: maps GPIO source names (e.g. "button_0", "touch_2") to key indices.
+    // The firmware uses this to know which MIDI note to play for each GPIO input.
+    var keyMap = {};
     if (hwZone) {
       var conns = hwZone.getActiveConnections();
       hasAccel = !!conns.accelerometer;
@@ -2616,13 +2619,50 @@
           accelDeadZone = ti.config.deadZone !== undefined ? ti.config.deadZone : 5;
           accelSmoothing = ti.config.smoothing !== undefined ? ti.config.smoothing : 25;
         }
+
+        // Build key_map entries for individual key and full keyboard items.
+        // For kind="key": single keyIndex mapped to one GPIO source.
+        // For kind="keys": each GPIO in the array maps to a scale key index.
+        if ((ti.kind === "key" || ti.kind === "keys") && ti.hwType && ti.gpio) {
+          var gpioArr = Array.isArray(ti.gpio) ? ti.gpio : [ti.gpio];
+          if (ti.kind === "key" && ti.keyIndex !== null) {
+            // Single key: map its GPIO source to its keyIndex
+            for (var ki = 0; ki < gpioArr.length; ki++) {
+              var pin = gpioArr[ki];
+              if (!pin) continue;
+              var src;
+              if (ti.hwType === "button") src = "button_" + pin.replace("GP", "");
+              else if (ti.hwType === "touch_native") src = "touch_" + pin.replace("GP", "");
+              else if (ti.hwType === "touch_mpr121") src = "mpr121_" + pin.replace("CH", "");
+              if (src) keyMap[src] = ti.keyIndex;
+            }
+          } else if (ti.kind === "keys") {
+            // Full keyboard: each GPIO maps to sequential key indices (0, 1, 2, ...)
+            var scaleKeys = hwZone.getScaleKeys();
+            for (var si = 0; si < gpioArr.length && si < scaleKeys.length; si++) {
+              var kpin = gpioArr[si];
+              if (!kpin) continue;
+              var ksrc;
+              if (ti.hwType === "button") ksrc = "button_" + kpin.replace("GP", "");
+              else if (ti.hwType === "touch_native") ksrc = "touch_" + kpin.replace("GP", "");
+              else if (ti.hwType === "touch_mpr121") ksrc = "mpr121_" + kpin.replace("CH", "");
+              if (ksrc) keyMap[ksrc] = scaleKeys[si].index;
+            }
+          }
+        }
       }
     }
+
+    // Compute scale intervals for firmware note mapping
+    var scaleIntervals = getScaleIntervals();
 
     return {
       voice: voiceKey,
       self_play: false,
       input_map: inputMap,
+      key_map: keyMap,
+      scale: scaleIntervals,
+      octave: state.currentOctave,
       touch_pins: touchPins,
       button_pins: buttonPins,
       analog_pins: analogPins,
