@@ -2657,16 +2657,20 @@
     }
 
     var config = buildDeviceConfig();
-    await PicoSerial.putConfig(config);
-    console.log("Pushed zone config to device");
+    var pushed = await PicoSerial.putConfig(config);
+    console.log(pushed ? "Pushed zone config to device" : "WARNING: putConfig failed (device may need reset)");
   }
 
   async function saveConfigToDevice() {
-    if (!PicoSerial.isConnected()) return;
+    if (!PicoSerial.isConnected()) {
+      console.error("Cannot save: not connected to device");
+      return;
+    }
     var config = buildDeviceConfig();
+    console.log("Pushing config to device:", JSON.stringify(config).length, "bytes");
     var ok = await PicoSerial.putConfig(config);
     if (!ok) {
-      console.error("Failed to push config");
+      console.error("Failed to push config (device did not respond within 5s)");
       return;
     }
     var saved = await PicoSerial.saveToFlash();

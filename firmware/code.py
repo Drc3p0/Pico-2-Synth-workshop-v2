@@ -118,38 +118,39 @@ def handle_command(line, config, voice, synth, inputs, oled):
         serial_send({"resp": "config", "data": config})
 
     elif cmd == "put_config":
-        new_data = msg.get("data", {})
-        old_voice = config.get("voice")
-        old_hw_keys = (
-            config.get("extended_buttons"),
-            config.get("mpr121_enabled"),
-            config.get("mpr121_boards"),
-            config.get("accelerometer_enabled"),
-            tuple(config.get("button_pins", ())),
-            tuple(config.get("analog_pins", ())),
-            tuple(config.get("touch_pins", ())),
-        )
-        config.update(new_data)
+        try:
+            new_data = msg.get("data", {})
+            old_voice = config.get("voice")
+            old_hw_keys = (
+                config.get("extended_buttons"),
+                config.get("mpr121_enabled"),
+                config.get("mpr121_boards"),
+                config.get("accelerometer_enabled"),
+                tuple(config.get("button_pins", ())),
+                tuple(config.get("analog_pins", ())),
+                tuple(config.get("touch_pins", ())),
+            )
+            config.update(new_data)
 
-        new_hw_keys = (
-            config.get("extended_buttons"),
-            config.get("mpr121_enabled"),
-            config.get("mpr121_boards"),
-            config.get("accelerometer_enabled"),
-            tuple(config.get("button_pins", ())),
-            tuple(config.get("analog_pins", ())),
-            tuple(config.get("touch_pins", ())),
-        )
+            new_hw_keys = (
+                config.get("extended_buttons"),
+                config.get("mpr121_enabled"),
+                config.get("mpr121_boards"),
+                config.get("accelerometer_enabled"),
+                tuple(config.get("button_pins", ())),
+                tuple(config.get("analog_pins", ())),
+                tuple(config.get("touch_pins", ())),
+            )
 
-        # Rebuild inputs if hardware config changed
-        if old_hw_keys != new_hw_keys:
-            need_rebuild = True
+            if old_hw_keys != new_hw_keys:
+                need_rebuild = True
 
-        # Reload voice if voice changed
-        if config.get("voice") != old_voice:
-            voice = load_voice(config.get("voice", "eighties_dystopia"), synth, config)
+            if config.get("voice") != old_voice:
+                voice = load_voice(config.get("voice", "eighties_dystopia"), synth, config)
 
-        serial_send({"resp": "ok"})
+            serial_send({"resp": "ok"})
+        except Exception as e:
+            serial_send({"resp": "error", "msg": str(e)})
 
     elif cmd == "save":
         ok = save_config(config)
@@ -165,7 +166,10 @@ def handle_command(line, config, voice, synth, inputs, oled):
         serial_send({"resp": "error", "msg": "unknown cmd"})
 
     if need_rebuild:
-        inputs.deinit()
+        try:
+            inputs.deinit()
+        except Exception:
+            pass
         inputs = InputManager(config)
         inputs.init_i2c()
         oled = _init_oled(config, inputs)
