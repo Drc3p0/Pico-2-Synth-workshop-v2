@@ -2685,7 +2685,7 @@
     if (!ok) return;
 
     // Wait for device to finish booting (CircuitPython may soft-reboot on connect)
-    await new Promise(function (r) { setTimeout(r, 2000); });
+    await new Promise(function (r) { setTimeout(r, 4000); });
 
     var pong = null;
     for (var attempt = 0; attempt < 3; attempt++) {
