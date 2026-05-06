@@ -287,25 +287,8 @@ SAMPLE_RATE = CONFIG.get("sample_rate", 28000)
 audio_pin = getattr(board, CONFIG.get("audio_pin", "GP13"))
 audio = audiopwmio.PWMAudioOut(audio_pin)
 
-mixer = audiomixer.Mixer(channel_count=1, sample_rate=SAMPLE_RATE, buffer_size=4096)
 synth = synthio.Synthesizer(channel_count=1, sample_rate=SAMPLE_RATE)
-
-# --- Effects Chain ---
-final_output = mixer
-effects = None
-if CONFIG.get("effects_enabled", False):
-    try:
-        from lib.fx import EffectsChain
-        effects = EffectsChain(SAMPLE_RATE, 1, 4096)
-        final_output = effects.build_chain(synth)
-        effects.update_from_config(CONFIG)
-    except Exception:
-        mixer.voice[0].play(synth)
-else:
-    mixer.voice[0].play(synth)
-
-audio.play(final_output if final_output is not mixer else mixer)
-mixer.voice[0].level = 0.85
+audio.play(synth)
 
 # --- Inputs ---
 inputs = InputManager(CONFIG)
