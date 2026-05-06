@@ -80,7 +80,7 @@ _VERSION = "2.0"
 
 
 def serial_send(obj):
-    print(json.dumps(obj))
+    sys.stdout.write("\n" + json.dumps(obj) + "\n")
 
 
 def serial_check():
