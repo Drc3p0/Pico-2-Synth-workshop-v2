@@ -2684,9 +2684,17 @@
     var ok = await PicoSerial.connect();
     if (!ok) return;
 
-    var pong = await PicoSerial.ping();
+    // Wait for device to finish booting (CircuitPython may soft-reboot on connect)
+    await new Promise(function (r) { setTimeout(r, 2000); });
+
+    var pong = null;
+    for (var attempt = 0; attempt < 3; attempt++) {
+      pong = await PicoSerial.ping();
+      if (pong) break;
+      await new Promise(function (r) { setTimeout(r, 1000); });
+    }
     if (!pong) {
-      console.warn("Device did not respond to ping");
+      console.warn("Device did not respond to ping after 3 attempts");
       return;
     }
     console.log("Connected to:", pong.version);
